@@ -1,0 +1,766 @@
+{
+  "results": [
+    {
+      "dataset": "esol",
+      "split": "random",
+      "model": "Delaney (original)",
+      "features": "4 ESOL vars",
+      "n_train": 892,
+      "n_test": 224,
+      "cv_rmse": 1.108,
+      "cv_rmse_sd": 0.041,
+      "test_rmse": 1.07,
+      "test_mae": 0.824,
+      "test_r2": 0.697,
+      "params": {}
+    },
+    {
+      "dataset": "esol",
+      "split": "random",
+      "model": "Delaney (refit)",
+      "features": "4 ESOL vars",
+      "n_train": 892,
+      "n_test": 224,
+      "cv_rmse": 1.037,
+      "cv_rmse_sd": 0.036,
+      "test_rmse": 0.92,
+      "test_mae": 0.714,
+      "test_r2": 0.776,
+      "params": {
+        "intercept": 0.26,
+        "coef": [
+          -0.7437,
+          -0.0064,
+          0.0059,
+          -0.4633
+        ]
+      }
+    },
+    {
+      "dataset": "esol",
+      "split": "random",
+      "model": "Linear regression",
+      "features": "desc",
+      "n_train": 892,
+      "n_test": 224,
+      "cv_rmse": 0.978,
+      "cv_rmse_sd": 0.061,
+      "test_rmse": 0.888,
+      "test_mae": 0.735,
+      "test_r2": 0.791,
+      "params": {}
+    },
+    {
+      "dataset": "esol",
+      "split": "random",
+      "model": "Random forest",
+      "features": "desc",
+      "n_train": 892,
+      "n_test": 224,
+      "cv_rmse": 0.683,
+      "cv_rmse_sd": 0.057,
+      "test_rmse": 0.665,
+      "test_mae": 0.477,
+      "test_r2": 0.883,
+      "params": {
+        "n_estimators": 300,
+        "min_samples_leaf": 1,
+        "max_features": 0.33,
+        "max_depth": null
+      }
+    },
+    {
+      "dataset": "esol",
+      "split": "random",
+      "model": "Random forest",
+      "features": "fp",
+      "n_train": 892,
+      "n_test": 224,
+      "cv_rmse": 1.197,
+      "cv_rmse_sd": 0.045,
+      "test_rmse": 1.194,
+      "test_mae": 0.885,
+      "test_r2": 0.623,
+      "params": {
+        "n_estimators": 300,
+        "min_samples_leaf": 1,
+        "max_features": 0.33,
+        "max_depth": null
+      }
+    },
+    {
+      "dataset": "esol",
+      "split": "random",
+      "model": "Random forest",
+      "features": "desc+fp",
+      "n_train": 892,
+      "n_test": 224,
+      "cv_rmse": 0.665,
+      "cv_rmse_sd": 0.027,
+      "test_rmse": 0.616,
+      "test_mae": 0.456,
+      "test_r2": 0.9,
+      "params": {
+        "n_estimators": 300,
+        "min_samples_leaf": 1,
+        "max_features": 0.33,
+        "max_depth": null
+      }
+    },
+    {
+      "dataset": "esol",
+      "split": "random",
+      "model": "LightGBM",
+      "features": "desc",
+      "n_train": 892,
+      "n_test": 224,
+      "cv_rmse": 0.665,
+      "cv_rmse_sd": 0.04,
+      "test_rmse": 0.643,
+      "test_mae": 0.455,
+      "test_r2": 0.891,
+      "params": {
+        "subsample": 0.7,
+        "reg_lambda": 5.0,
+        "num_leaves": 63,
+        "n_estimators": 400,
+        "min_child_samples": 10,
+        "learning_rate": 0.02,
+        "colsample_bytree": 0.8
+      }
+    },
+    {
+      "dataset": "esol",
+      "split": "random",
+      "model": "LightGBM",
+      "features": "fp",
+      "n_train": 892,
+      "n_test": 224,
+      "cv_rmse": 1.108,
+      "cv_rmse_sd": 0.025,
+      "test_rmse": 1.083,
+      "test_mae": 0.793,
+      "test_r2": 0.69,
+      "params": {
+        "subsample": 1.0,
+        "reg_lambda": 1.0,
+        "num_leaves": 63,
+        "n_estimators": 400,
+        "min_child_samples": 10,
+        "learning_rate": 0.1,
+        "colsample_bytree": 0.5
+      }
+    },
+    {
+      "dataset": "esol",
+      "split": "random",
+      "model": "LightGBM",
+      "features": "desc+fp",
+      "n_train": 892,
+      "n_test": 224,
+      "cv_rmse": 0.622,
+      "cv_rmse_sd": 0.021,
+      "test_rmse": 0.605,
+      "test_mae": 0.432,
+      "test_r2": 0.903,
+      "params": {
+        "subsample": 0.7,
+        "reg_lambda": 5.0,
+        "num_leaves": 63,
+        "n_estimators": 400,
+        "min_child_samples": 10,
+        "learning_rate": 0.02,
+        "colsample_bytree": 0.8
+      }
+    },
+    {
+      "dataset": "esol",
+      "split": "scaffold",
+      "model": "Delaney (original)",
+      "features": "4 ESOL vars",
+      "n_train": 889,
+      "n_test": 227,
+      "cv_rmse": 1.069,
+      "cv_rmse_sd": 0.129,
+      "test_rmse": 1.239,
+      "test_mae": 0.961,
+      "test_r2": 0.639,
+      "params": {}
+    },
+    {
+      "dataset": "esol",
+      "split": "scaffold",
+      "model": "Delaney (refit)",
+      "features": "4 ESOL vars",
+      "n_train": 889,
+      "n_test": 227,
+      "cv_rmse": 1.045,
+      "cv_rmse_sd": 0.092,
+      "test_rmse": 1.228,
+      "test_mae": 0.946,
+      "test_r2": 0.645,
+      "params": {
+        "intercept": 0.298,
+        "coef": [
+          -0.8187,
+          -0.0056,
+          0.003,
+          -0.3937
+        ]
+      }
+    },
+    {
+      "dataset": "esol",
+      "split": "scaffold",
+      "model": "Linear regression",
+      "features": "desc",
+      "n_train": 889,
+      "n_test": 227,
+      "cv_rmse": 1.042,
+      "cv_rmse_sd": 0.091,
+      "test_rmse": 1.209,
+      "test_mae": 0.923,
+      "test_r2": 0.656,
+      "params": {}
+    },
+    {
+      "dataset": "esol",
+      "split": "scaffold",
+      "model": "Random forest",
+      "features": "desc",
+      "n_train": 889,
+      "n_test": 227,
+      "cv_rmse": 0.853,
+      "cv_rmse_sd": 0.123,
+      "test_rmse": 0.88,
+      "test_mae": 0.686,
+      "test_r2": 0.818,
+      "params": {
+        "n_estimators": 300,
+        "min_samples_leaf": 2,
+        "max_features": 0.33,
+        "max_depth": 30
+      }
+    },
+    {
+      "dataset": "esol",
+      "split": "scaffold",
+      "model": "Random forest",
+      "features": "fp",
+      "n_train": 889,
+      "n_test": 227,
+      "cv_rmse": 2.019,
+      "cv_rmse_sd": 0.326,
+      "test_rmse": 1.51,
+      "test_mae": 1.164,
+      "test_r2": 0.463,
+      "params": {
+        "n_estimators": 300,
+        "min_samples_leaf": 2,
+        "max_features": 0.2,
+        "max_depth": null
+      }
+    },
+    {
+      "dataset": "esol",
+      "split": "scaffold",
+      "model": "Random forest",
+      "features": "desc+fp",
+      "n_train": 889,
+      "n_test": 227,
+      "cv_rmse": 0.849,
+      "cv_rmse_sd": 0.132,
+      "test_rmse": 0.809,
+      "test_mae": 0.634,
+      "test_r2": 0.846,
+      "params": {
+        "n_estimators": 300,
+        "min_samples_leaf": 1,
+        "max_features": 0.33,
+        "max_depth": null
+      }
+    },
+    {
+      "dataset": "esol",
+      "split": "scaffold",
+      "model": "LightGBM",
+      "features": "desc",
+      "n_train": 889,
+      "n_test": 227,
+      "cv_rmse": 0.814,
+      "cv_rmse_sd": 0.096,
+      "test_rmse": 0.935,
+      "test_mae": 0.708,
+      "test_r2": 0.794,
+      "params": {
+        "subsample": 0.7,
+        "reg_lambda": 5.0,
+        "num_leaves": 63,
+        "n_estimators": 400,
+        "min_child_samples": 10,
+        "learning_rate": 0.02,
+        "colsample_bytree": 0.8
+      }
+    },
+    {
+      "dataset": "esol",
+      "split": "scaffold",
+      "model": "LightGBM",
+      "features": "fp",
+      "n_train": 889,
+      "n_test": 227,
+      "cv_rmse": 2.022,
+      "cv_rmse_sd": 0.397,
+      "test_rmse": 1.49,
+      "test_mae": 1.151,
+      "test_r2": 0.477,
+      "params": {
+        "subsample": 0.9,
+        "reg_lambda": 1.0,
+        "num_leaves": 63,
+        "n_estimators": 800,
+        "min_child_samples": 20,
+        "learning_rate": 0.02,
+        "colsample_bytree": 0.3
+      }
+    },
+    {
+      "dataset": "esol",
+      "split": "scaffold",
+      "model": "LightGBM",
+      "features": "desc+fp",
+      "n_train": 889,
+      "n_test": 227,
+      "cv_rmse": 0.806,
+      "cv_rmse_sd": 0.107,
+      "test_rmse": 0.833,
+      "test_mae": 0.641,
+      "test_r2": 0.837,
+      "params": {
+        "subsample": 0.7,
+        "reg_lambda": 5.0,
+        "num_leaves": 63,
+        "n_estimators": 400,
+        "min_child_samples": 10,
+        "learning_rate": 0.02,
+        "colsample_bytree": 0.8
+      }
+    },
+    {
+      "dataset": "aqsoldb",
+      "split": "random",
+      "model": "Delaney (original)",
+      "features": "4 ESOL vars",
+      "n_train": 7003,
+      "n_test": 1751,
+      "cv_rmse": 1.332,
+      "cv_rmse_sd": 0.043,
+      "test_rmse": 1.353,
+      "test_mae": 0.998,
+      "test_r2": 0.651,
+      "params": {}
+    },
+    {
+      "dataset": "aqsoldb",
+      "split": "random",
+      "model": "Delaney (refit)",
+      "features": "4 ESOL vars",
+      "n_train": 7003,
+      "n_test": 1751,
+      "cv_rmse": 1.321,
+      "cv_rmse_sd": 0.04,
+      "test_rmse": 1.336,
+      "test_mae": 1.001,
+      "test_r2": 0.66,
+      "params": {
+        "intercept": -0.145,
+        "coef": [
+          -0.6257,
+          -0.0058,
+          0.0907,
+          -0.7299
+        ]
+      }
+    },
+    {
+      "dataset": "aqsoldb",
+      "split": "random",
+      "model": "Linear regression",
+      "features": "desc",
+      "n_train": 7003,
+      "n_test": 1751,
+      "cv_rmse": 1.308,
+      "cv_rmse_sd": 0.033,
+      "test_rmse": 1.311,
+      "test_mae": 0.983,
+      "test_r2": 0.672,
+      "params": {}
+    },
+    {
+      "dataset": "aqsoldb",
+      "split": "random",
+      "model": "Random forest",
+      "features": "desc",
+      "n_train": 7003,
+      "n_test": 1751,
+      "cv_rmse": 0.948,
+      "cv_rmse_sd": 0.005,
+      "test_rmse": 0.942,
+      "test_mae": 0.669,
+      "test_r2": 0.831,
+      "params": {
+        "n_estimators": 300,
+        "min_samples_leaf": 1,
+        "max_features": 0.33,
+        "max_depth": null
+      }
+    },
+    {
+      "dataset": "aqsoldb",
+      "split": "random",
+      "model": "Random forest",
+      "features": "fp",
+      "n_train": 7003,
+      "n_test": 1751,
+      "cv_rmse": 1.268,
+      "cv_rmse_sd": 0.03,
+      "test_rmse": 1.252,
+      "test_mae": 0.905,
+      "test_r2": 0.701,
+      "params": {
+        "n_estimators": 300,
+        "min_samples_leaf": 1,
+        "max_features": 0.2,
+        "max_depth": null
+      }
+    },
+    {
+      "dataset": "aqsoldb",
+      "split": "random",
+      "model": "Random forest",
+      "features": "desc+fp",
+      "n_train": 7003,
+      "n_test": 1751,
+      "cv_rmse": 0.889,
+      "cv_rmse_sd": 0.007,
+      "test_rmse": 0.877,
+      "test_mae": 0.621,
+      "test_r2": 0.854,
+      "params": {
+        "n_estimators": 300,
+        "min_samples_leaf": 1,
+        "max_features": 0.2,
+        "max_depth": null
+      }
+    },
+    {
+      "dataset": "aqsoldb",
+      "split": "random",
+      "model": "LightGBM",
+      "features": "desc",
+      "n_train": 7003,
+      "n_test": 1751,
+      "cv_rmse": 0.941,
+      "cv_rmse_sd": 0.005,
+      "test_rmse": 0.935,
+      "test_mae": 0.672,
+      "test_r2": 0.833,
+      "params": {
+        "subsample": 1.0,
+        "reg_lambda": 1.0,
+        "num_leaves": 63,
+        "n_estimators": 800,
+        "min_child_samples": 20,
+        "learning_rate": 0.02,
+        "colsample_bytree": 0.5
+      }
+    },
+    {
+      "dataset": "aqsoldb",
+      "split": "random",
+      "model": "LightGBM",
+      "features": "fp",
+      "n_train": 7003,
+      "n_test": 1751,
+      "cv_rmse": 1.132,
+      "cv_rmse_sd": 0.006,
+      "test_rmse": 1.146,
+      "test_mae": 0.822,
+      "test_r2": 0.75,
+      "params": {
+        "subsample": 1.0,
+        "reg_lambda": 1.0,
+        "num_leaves": 63,
+        "n_estimators": 1200,
+        "min_child_samples": 20,
+        "learning_rate": 0.05,
+        "colsample_bytree": 0.5
+      }
+    },
+    {
+      "dataset": "aqsoldb",
+      "split": "random",
+      "model": "LightGBM",
+      "features": "desc+fp",
+      "n_train": 7003,
+      "n_test": 1751,
+      "cv_rmse": 0.839,
+      "cv_rmse_sd": 0.01,
+      "test_rmse": 0.835,
+      "test_mae": 0.59,
+      "test_r2": 0.867,
+      "params": {
+        "subsample": 1.0,
+        "reg_lambda": 1.0,
+        "num_leaves": 63,
+        "n_estimators": 800,
+        "min_child_samples": 20,
+        "learning_rate": 0.02,
+        "colsample_bytree": 0.5
+      }
+    },
+    {
+      "dataset": "aqsoldb",
+      "split": "scaffold",
+      "model": "Delaney (original)",
+      "features": "4 ESOL vars",
+      "n_train": 7003,
+      "n_test": 1751,
+      "cv_rmse": 1.317,
+      "cv_rmse_sd": 0.176,
+      "test_rmse": 1.44,
+      "test_mae": 1.049,
+      "test_r2": 0.569,
+      "params": {}
+    },
+    {
+      "dataset": "aqsoldb",
+      "split": "scaffold",
+      "model": "Delaney (refit)",
+      "features": "4 ESOL vars",
+      "n_train": 7003,
+      "n_test": 1751,
+      "cv_rmse": 1.328,
+      "cv_rmse_sd": 0.151,
+      "test_rmse": 1.412,
+      "test_mae": 1.034,
+      "test_r2": 0.586,
+      "params": {
+        "intercept": -0.079,
+        "coef": [
+          -0.6421,
+          -0.0059,
+          0.0905,
+          -0.6208
+        ]
+      }
+    },
+    {
+      "dataset": "aqsoldb",
+      "split": "scaffold",
+      "model": "Linear regression",
+      "features": "desc",
+      "n_train": 7003,
+      "n_test": 1751,
+      "cv_rmse": 1.323,
+      "cv_rmse_sd": 0.164,
+      "test_rmse": 1.409,
+      "test_mae": 1.023,
+      "test_r2": 0.588,
+      "params": {}
+    },
+    {
+      "dataset": "aqsoldb",
+      "split": "scaffold",
+      "model": "Random forest",
+      "features": "desc",
+      "n_train": 7003,
+      "n_test": 1751,
+      "cv_rmse": 1.05,
+      "cv_rmse_sd": 0.1,
+      "test_rmse": 1.121,
+      "test_mae": 0.836,
+      "test_r2": 0.739,
+      "params": {
+        "n_estimators": 300,
+        "min_samples_leaf": 2,
+        "max_features": 0.33,
+        "max_depth": 30
+      }
+    },
+    {
+      "dataset": "aqsoldb",
+      "split": "scaffold",
+      "model": "Random forest",
+      "features": "fp",
+      "n_train": 7003,
+      "n_test": 1751,
+      "cv_rmse": 1.887,
+      "cv_rmse_sd": 0.15,
+      "test_rmse": 1.555,
+      "test_mae": 1.19,
+      "test_r2": 0.498,
+      "params": {
+        "n_estimators": 300,
+        "min_samples_leaf": 1,
+        "max_features": 0.2,
+        "max_depth": null
+      }
+    },
+    {
+      "dataset": "aqsoldb",
+      "split": "scaffold",
+      "model": "Random forest",
+      "features": "desc+fp",
+      "n_train": 7003,
+      "n_test": 1751,
+      "cv_rmse": 1.0,
+      "cv_rmse_sd": 0.1,
+      "test_rmse": 1.07,
+      "test_mae": 0.796,
+      "test_r2": 0.762,
+      "params": {
+        "n_estimators": 300,
+        "min_samples_leaf": 1,
+        "max_features": 0.33,
+        "max_depth": null
+      }
+    },
+    {
+      "dataset": "aqsoldb",
+      "split": "scaffold",
+      "model": "LightGBM",
+      "features": "desc",
+      "n_train": 7003,
+      "n_test": 1751,
+      "cv_rmse": 1.05,
+      "cv_rmse_sd": 0.093,
+      "test_rmse": 1.075,
+      "test_mae": 0.807,
+      "test_r2": 0.76,
+      "params": {
+        "subsample": 0.7,
+        "reg_lambda": 5.0,
+        "num_leaves": 63,
+        "n_estimators": 400,
+        "min_child_samples": 10,
+        "learning_rate": 0.02,
+        "colsample_bytree": 0.8
+      }
+    },
+    {
+      "dataset": "aqsoldb",
+      "split": "scaffold",
+      "model": "LightGBM",
+      "features": "fp",
+      "n_train": 7003,
+      "n_test": 1751,
+      "cv_rmse": 1.67,
+      "cv_rmse_sd": 0.173,
+      "test_rmse": 1.413,
+      "test_mae": 1.077,
+      "test_r2": 0.585,
+      "params": {
+        "subsample": 0.9,
+        "reg_lambda": 1.0,
+        "num_leaves": 63,
+        "n_estimators": 800,
+        "min_child_samples": 20,
+        "learning_rate": 0.02,
+        "colsample_bytree": 0.3
+      }
+    },
+    {
+      "dataset": "aqsoldb",
+      "split": "scaffold",
+      "model": "LightGBM",
+      "features": "desc+fp",
+      "n_train": 7003,
+      "n_test": 1751,
+      "cv_rmse": 0.954,
+      "cv_rmse_sd": 0.097,
+      "test_rmse": 1.012,
+      "test_mae": 0.752,
+      "test_r2": 0.787,
+      "params": {
+        "subsample": 0.7,
+        "reg_lambda": 5.0,
+        "num_leaves": 63,
+        "n_estimators": 400,
+        "min_child_samples": 10,
+        "learning_rate": 0.02,
+        "colsample_bytree": 0.8
+      }
+    }
+  ],
+  "esol_overlap": {
+    "n_esol": 1116,
+    "n_in_aqsoldb": 1115,
+    "n_not_in_aqsoldb": 1
+  },
+  "final_model": {
+    "name": "SoluAI",
+    "version": "1.0.0",
+    "trained_on": "2026-11-12",
+    "algorithm": "LightGBM gradient boosting",
+    "features": "desc+fp",
+    "params": {
+      "subsample": 0.7,
+      "reg_lambda": 5.0,
+      "num_leaves": 63,
+      "n_estimators": 400,
+      "min_child_samples": 10,
+      "learning_rate": 0.02,
+      "colsample_bytree": 0.8
+    },
+    "n_training_molecules": 8754,
+    "config_hash": "4b769dbab37a",
+    "data_sha256": {
+      "aqsoldb_curated.csv": "363a42a4e4ea8e6039758146d34efdd95cde2da81c665316cacc1869e0a805ed",
+      "esol_delaney.csv": "8c06a76f0c6487d29ab0f903e6a7a7139f189ab3c1178f159c8be8964602f189"
+    },
+    "conformal": {
+      "threshold": 0.3,
+      "coverage": 0.9,
+      "q": {
+        "in": 1.4870063212018467,
+        "out": 1.5943583327461828
+      }
+    },
+    "scaffold_cv_rmse_of_choice": 0.954,
+    "packages": {
+      "python": "3.13.18",
+      "rdkit": "2026.09.2",
+      "lightgbm": "4.7.0",
+      "scikit-learn": "1.9.1",
+      "numpy": "2.5.4",
+      "pandas": "3.1.1",
+      "soluai": "1.0.0"
+    }
+  },
+  "final_oof": {
+    "rmse": 0.941,
+    "mae": 0.684,
+    "r2": 0.834
+  },
+  "cleaning": {
+    "aqsoldb": {
+      "input_rows": 9982,
+      "salt_or_mixture": 1098,
+      "ok": 8761,
+      "no_carbon": 91,
+      "non_organic_element": 30,
+      "invalid_smiles": 2,
+      "duplicate_groups": 6,
+      "duplicates_conflicting_dropped": 1,
+      "output_rows": 8754
+    },
+    "esol": {
+      "input_rows": 1128,
+      "ok": 1128,
+      "duplicate_groups": 11,
+      "duplicates_conflicting_dropped": 1,
+      "output_rows": 1116
+    }
+  }
+}

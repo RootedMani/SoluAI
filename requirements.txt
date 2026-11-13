@@ -1,0 +1,13 @@
+# Runtime dependencies (what the website and training need). Pinned for reproducibility.
+# Works on Linux, macOS and Windows with Python 3.11-3.13.
+fastapi==0.162.5
+uvicorn[standard]==0.54.0
+pydantic==2.14.3
+rdkit==2026.9.2
+lightgbm==4.7.0
+scikit-learn==1.9.1
+numpy==2.5.4
+pandas==3.1.1
+joblib==1.6.0
+PyYAML==6.0.3
+requests==2.34.2

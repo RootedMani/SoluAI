@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<title>SoluAI · Explore the data</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/style.css">
+<script>/* apply the saved (or system) theme before the page paints, to avoid a flash */
+(function(){var t=null;try{t=localStorage.getItem("soluai-theme")}catch(e){}
+if(!t){t=window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}
+document.documentElement.dataset.theme=t})();</script>
+<script src="/static/js/common.js"></script>
+<script src="/static/vendor/plotly-2.35.2.min.js" defer></script>
+<script src="/static/js/explore.js" defer></script>
+</head>
+<body>
+<main class="wrap">
+  <section class="page-title">
+    <span class="eyebrow">AqSolDB · cleaned</span>
+    <h1>Explore the data</h1>
+    <p class="lead">These are the measured molecules the model learned from. Each dot is a real lab measurement. Click a dot to send that molecule to the predictor.</p>
+  </section>
+  <div class="grid grid-4" id="stats"></div>
+  <div class="card" style="margin-top:20px">
+    <div class="input-row" style="margin-top:0;justify-content:space-between">
+      <div class="segmented" id="color-by">
+        <button class="active" data-c="HBD">Colour: H-bond donors</button>
+        <button data-c="aromatic">Aromatic proportion</button>
+        <button data-c="TPSA">Polar surface</button>
+      </div>
+      <label class="field" style="flex:1;max-width:340px"><input id="filter" placeholder="Highlight molecules by name, e.g. acid" spellcheck="false"></label>
+    </div>
+  </div>
+  <div class="grid grid-2" style="margin-top:20px">
+    <div class="card"><div class="card-title"><h3>Solubility vs logP</h3><span class="small muted">"like dissolves like"</span></div><div id="p-logp" class="plot"></div>
+      <p class="small muted">The clearest trend in chemistry: the oilier the molecule (higher logP), the less it dissolves in water. Correlation r = <b id="r-logp">…</b></p></div>
+    <div class="card"><div class="card-title"><h3>Solubility vs molecular weight</h3><span class="small muted">size matters</span></div><div id="p-mw" class="plot"></div>
+      <p class="small muted">Bigger molecules need a bigger "hole" in water, so they tend to dissolve less, though there is a lot of spread. r = <b id="r-mw">…</b></p></div>
+  </div>
+  <div class="card" style="margin-top:20px"><div class="card-title"><h3>How soluble are the molecules?</h3><span class="small muted">distribution of logS</span></div><div id="p-hist" class="plot"></div></div>
+</main>
+</body>
+</html>

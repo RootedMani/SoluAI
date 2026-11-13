@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<title>SoluAI · Chemistry corner</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/style.css">
+<script>/* apply the saved (or system) theme before the page paints, to avoid a flash */
+(function(){var t=null;try{t=localStorage.getItem("soluai-theme")}catch(e){}
+if(!t){t=window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}
+document.documentElement.dataset.theme=t})();</script>
+<script src="/static/js/common.js"></script>
+</head>
+<body>
+<main class="wrap">
+  <section class="page-title">
+    <span class="eyebrow">The science behind it</span>
+    <h1>Chemistry corner</h1>
+    <p class="lead">Why do sugar and salt dissolve in water while oil doesn't? Here are the five ideas that explain most of it, and how the model rediscovered each one from data.</p>
+  </section>
+
+  <div class="stack">
+    <div class="card concept"><div class="num-badge">1</div><div class="prose">
+      <h2 style="margin-top:0">What does "solubility" mean?</h2>
+      <p>Solubility is the most of a substance that dissolves in a fixed amount of water before the solution is saturated. Chemists measure it in moles per litre (mol/L). Values range from about 10 mol/L for very soluble molecules down to 10<sup>−12</sup> mol/L for "insoluble" ones, so we use the logarithm: <b>logS = log<sub>10</sub>(S in mol/L)</b>.</p>
+      <p>logS = 0 means 1 mol/L. logS = −3 means 0.001 mol/L. <b>Every step of 1 is a factor of 10.</b></p>
+      <div class="table-wrap"><table><thead><tr><th>logS</th><th>Class</th><th>Examples (measured logS)</th></tr></thead><tbody>
+        <tr><td>≥ 0</td><td><span class="badge cls-high">Highly soluble</span></td><td>ethanol (+1.2), 1-butanol (0.0)</td></tr>
+        <tr><td>−2 to 0</td><td><span class="badge cls-sol">Soluble</span></td><td>phenol (0.0), caffeine (−0.9), aspirin (−1.7)</td></tr>
+        <tr><td>−4 to −2</td><td><span class="badge cls-slight">Slightly soluble</span></td><td>1-octanol (−2.6), hexane (−3.9)</td></tr>
+        <tr><td>&lt; −4</td><td><span class="badge cls-insol">Insoluble</span></td><td>naphthalene (−4.3), anthracene (−6.4), cholesterol (−7.1)</td></tr>
+      </tbody></table></div>
+    </div></div>
+
+    <div class="card concept"><div class="num-badge">2</div><div class="prose">
+      <h2 style="margin-top:0">"Like dissolves like": polarity</h2>
+      <p>Water is a <b>polar</b> molecule: oxygen pulls electrons towards itself, so the O end is slightly negative (δ−) and the H ends slightly positive (δ+). Polar molecules attract each other, so polar substances mix with water. Non-polar molecules such as hexane or oil give water nothing to attract, so water molecules stay together and push the oil out.</p>
+      <p>Chemists measure "oiliness" with <b>logP</b>: how a molecule splits between octanol (an oily liquid) and water. High logP means oily. <b>logP is the most important feature in our model</b>, and the higher it is, the lower the predicted solubility.</p>
+      <p><a href="/explore">See the logS vs logP chart →</a></p>
+    </div></div>
+
+    <div class="card concept"><div class="num-badge">3</div><div class="prose">
+      <h2 style="margin-top:0">Hydrogen bonding</h2>
+      <p>A hydrogen bond forms when an H attached to O or N (a <b>donor</b>) is attracted to a lone pair on another O or N (an <b>acceptor</b>). Water is very good at both. Molecules with –OH, –NH₂ or –COOH groups can join water's hydrogen-bond network, which is why glucose, with five –OH groups, is so soluble.</p>
+      <p>In the model, <b>polar surface area</b> and <b>H-bond donors</b> push solubility up. On the Predict page, the O and N atoms of alcohols, acids and amines usually show up blue.</p>
+      <p><a href="/?q=glucose">Try glucose →</a> &nbsp; <a href="/compare?m=benzene&m=phenol&m=benzoic%20acid&m=aniline">Benzene vs phenol vs benzoic acid →</a></p>
+    </div></div>
+
+    <div class="card concept"><div class="num-badge">4</div><div class="prose">
+      <h2 style="margin-top:0">Size: making a hole in water</h2>
+      <p>To dissolve a molecule, water has to open a "cavity" for it and break some of its own hydrogen bonds. The bigger the molecule, the bigger the cavity and the higher the cost. That is why solubility drops along the alcohol series: methanol and ethanol mix completely with water, but 1-octanol hardly dissolves. Each extra CH₂ group lowers logS by about 0.65 (measured values in AqSolDB).</p>
+      <p><a href="/compare?m=ethanol&m=1-butanol&m=1-hexanol&m=1-octanol">See the alcohol series →</a></p>
+    </div></div>
+
+    <div class="card concept"><div class="num-badge">5</div><div class="prose">
+      <h2 style="margin-top:0">The hidden factor: crystal energy</h2>
+      <p>A solid must first <b>leave its crystal</b> before it can dissolve. Flat, symmetric molecules such as anthracene stack very tightly, so they have high melting points and are much less soluble than you would expect from their logP. Chemists include this through the <b>melting point</b>, in the "General Solubility Equation" of Yalkowsky: logS ≈ 0.5 − 0.01·(mp − 25) − logP.</p>
+      <p>Our model <b>cannot see crystals</b>: it only gets the 2D structure. It partly guesses crystal effects from clues such as aromatic rings, which is why aromatic proportion pushes solubility down. This is also one of its main sources of error. Very high-melting compounds (dyes, steroids, polycyclic aromatics) are where it fails most.</p>
+    </div></div>
+
+    <div class="card concept"><div class="num-badge">!</div><div class="prose">
+      <h2 style="margin-top:0">What the model does <i>not</i> know</h2>
+      <ul>
+        <li><b>Temperature:</b> all data are near 25 °C. Most solids dissolve better in hot water.</li>
+        <li><b>pH:</b> acids and bases dissolve much better when they are ionised (e.g. aspirin in a basic solution).</li>
+        <li><b>Salts and inorganic compounds</b> (NaCl, CaCO₃…): left out on purpose, because their solubility follows different rules (lattice energy, ion hydration).</li>
+        <li><b>Polymorphs:</b> the same molecule can crystallise in different forms with different solubilities.</li>
+        <li><b>Measurement noise:</b> different labs disagree by about 0.5 log units, so no model can be perfect on this data.</li>
+      </ul>
+    </div></div>
+  </div>
+</main>
+</body>
+</html>

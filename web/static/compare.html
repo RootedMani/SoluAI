@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<title>SoluAI · Compare molecules</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/style.css">
+<script>/* apply the saved (or system) theme before the page paints, to avoid a flash */
+(function(){var t=null;try{t=localStorage.getItem("soluai-theme")}catch(e){}
+if(!t){t=window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}
+document.documentElement.dataset.theme=t})();</script>
+<script src="/static/js/common.js"></script>
+<script src="/static/vendor/plotly-2.35.2.min.js" defer></script>
+<script src="/static/js/compare.js" defer></script>
+</head>
+<body>
+<main class="wrap">
+  <section class="page-title">
+    <span class="eyebrow">Side by side</span>
+    <h1>Compare molecules</h1>
+    <p class="lead">Put 2 to 4 molecules next to each other to see a trend. For example, each extra CH₂ in an alcohol's chain makes it about 4 to 5 times less soluble.</p>
+  </section>
+  <div class="card">
+    <div class="compare-inputs" id="inputs"></div>
+    <div class="input-row">
+      <button class="btn" id="go">Compare</button>
+      <span class="hint">Presets:</span>
+      <div class="chips" id="presets"></div>
+    </div>
+  </div>
+  <div id="out" aria-live="polite"></div>
+</main>
+</body>
+</html>

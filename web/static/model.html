@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<title>SoluAI · How the model works</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/style.css">
+<script>/* apply the saved (or system) theme before the page paints, to avoid a flash */
+(function(){var t=null;try{t=localStorage.getItem("soluai-theme")}catch(e){}
+if(!t){t=window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}
+document.documentElement.dataset.theme=t})();</script>
+<script src="/static/js/common.js"></script>
+<script src="/static/vendor/plotly-2.35.2.min.js" defer></script>
+<script src="/static/js/model.js" defer></script>
+</head>
+<body>
+<main class="wrap">
+  <section class="page-title">
+    <span class="eyebrow">Honest evaluation</span>
+    <h1>How the model works</h1>
+    <p class="lead">Every number on this page comes from molecules the model <b>never saw</b> while it was learning. Here you can check how good it really is, and where it fails.</p>
+  </section>
+  <div class="grid grid-4" id="kpis"></div>
+
+  <div class="card" style="margin-top:20px">
+    <div class="card-title" style="flex-wrap:wrap">
+      <h2 style="margin:0">Two kinds of exam</h2>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <div class="segmented" id="ds"><button class="active" data-v="aqsoldb">AqSolDB</button><button data-v="esol">ESOL</button></div>
+        <div class="segmented" id="sp"><button class="active" data-v="random">Random split</button><button data-v="scaffold">Scaffold split</button></div>
+      </div>
+    </div>
+    <div class="grid grid-2">
+      <p class="muted"><b>Random split:</b> shuffle all molecules and hide 20% for the test. Test molecules usually have a close "cousin" in the training set, so this is the easier exam.</p>
+      <p class="muted"><b>Scaffold split:</b> group molecules by their ring skeleton and hide whole groups. The test molecules have skeletons the model has never seen, which is closer to predicting a brand-new drug.</p>
+    </div>
+    <div class="grid grid-2" style="margin-top:8px">
+      <div><div class="card-title"><h3>Predicted vs measured</h3><select id="parity-model" class="chip"></select></div><div id="p-parity" class="plot" style="min-height:420px"></div></div>
+      <div><h3>Model comparison</h3><div class="table-wrap" id="table"></div>
+        <p class="small muted" style="margin-top:10px">CV = 5-fold cross-validation on the training part, used to choose settings. Test = scored once on the hidden 20%. The highlighted row has the best CV score, which is how we pick a model (never by the test score).</p></div>
+    </div>
+  </div>
+
+  <div class="grid grid-2" style="margin-top:20px">
+    <div class="card"><h2>Human vs machine</h2><div id="p-human" class="plot"></div>
+      <p class="small muted">In 2004 John Delaney wrote a 4-term formula by hand: logS = 0.16 − 0.63·logP − 0.0062·MW + 0.066·RB − 0.74·AP. It is surprisingly good. The machine-learning models use more information and make <b id="gain">…</b> smaller errors on AqSolDB.</p></div>
+    <div class="card"><h2>What the model looks at</h2><div id="p-importance" class="plot" style="min-height:440px"></div>
+      <p class="small muted">Average size of each feature's push (mean |SHAP|) over all training molecules. "Fragment" features are Morgan fingerprint bits; the SMILES shows the small piece of molecule each bit stands for.</p></div>
+  </div>
+
+  <div class="card" style="margin-top:20px">
+    <h2>Does the model think like a chemist?</h2>
+    <p class="muted">Each dot is one molecule. The y-axis shows how much that feature pushed its prediction. If the model learned real chemistry, a high logP should push solubility down and polar surface or H-bond donors should push it up.</p>
+    <div class="grid grid-4" id="dep"></div>
+  </div>
+
+  <div class="grid grid-2" style="margin-top:20px">
+    <div class="card"><h2>How sure is it?</h2><div id="unc"></div></div>
+    <div class="card"><h2>Unfamiliar molecules are harder</h2><div id="p-sim" class="plot"></div>
+      <p class="small muted">Test error grouped by how similar each test molecule is to its closest training molecule (scaffold split, LightGBM).</p></div>
+  </div>
+</main>
+</body>
+</html>

@@ -1,0 +1,20 @@
+{
+  "aqsoldb": {
+    "input_rows": 9982,
+    "salt_or_mixture": 1098,
+    "ok": 8761,
+    "no_carbon": 91,
+    "non_organic_element": 30,
+    "invalid_smiles": 2,
+    "duplicate_groups": 6,
+    "duplicates_conflicting_dropped": 1,
+    "output_rows": 8754
+  },
+  "esol": {
+    "input_rows": 1128,
+    "ok": 1128,
+    "duplicate_groups": 11,
+    "duplicates_conflicting_dropped": 1,
+    "output_rows": 1116
+  }
+}

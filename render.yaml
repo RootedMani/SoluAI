@@ -1,0 +1,14 @@
+# Render Blueprint: Render -> New -> Blueprint -> pick this repository -> Apply.
+# The trained model is committed in models/, so nothing is trained on Render.
+services:
+  - type: web
+    name: soluai
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn web.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.13.18"   # same Python version the project was tested with
