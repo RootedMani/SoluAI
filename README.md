@@ -134,6 +134,7 @@ soluai/
 * [docs/model_card.md](docs/model_card.md): intended use, metrics, limitations, failure cases
 * [docs/presentation_guide.md](docs/presentation_guide.md): 6-minute talk, demo plan, Q&A
 * [docs/deployment.md](docs/deployment.md): putting the website online
+* [docs/soluai-documentation-fa.pdf](docs/soluai-documentation-fa.pdf): project documentation in Persian, for teachers (مستندات پروژه)
 * [docs/soluai-guide-fa.pdf](docs/soluai-guide-fa.pdf): complete guide in Persian (راهنمای کامل پروژه به فارسی)
 
 ## Data and credits
