@@ -13,6 +13,8 @@ chemistry terms.** Type a name (`caffeine`), a SMILES string (`CCO`) or pick a m
 It is a real, trained machine-learning model (LightGBM gradient boosting on RDKit descriptors and
 Morgan fingerprints), trained on 8,754 measured molecules from AqSolDB. It is **not** an LLM.
 
+> **Live site:** <https://soluai.onrender.com>
+>
 > A chemistry × computer science project. The [presentation guide](docs/presentation_guide.md)
 > has a 6-minute talk outline, demo molecules and likely questions.
 
@@ -132,6 +134,7 @@ soluai/
 * [docs/model_card.md](docs/model_card.md): intended use, metrics, limitations, failure cases
 * [docs/presentation_guide.md](docs/presentation_guide.md): 6-minute talk, demo plan, Q&A
 * [docs/deployment.md](docs/deployment.md): putting the website online
+* [docs/soluai-guide-fa.pdf](docs/soluai-guide-fa.pdf): complete guide in Persian (راهنمای کامل پروژه به فارسی)
 
 ## Data and credits
 
