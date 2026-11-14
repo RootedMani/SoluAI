@@ -2,10 +2,10 @@
 
 let DATA = [];
 let colorBy = "HBD";
-const COLOR_LABEL = { HBD: "H-bond donors", aromatic: "Aromatic proportion", TPSA: "Polar surface (Å²)" };
+const COLOR_LABEL = { HBD: T("H-bond donors", "دهنده‌های پیوند H"), aromatic: T("Aromatic proportion", "سهم آروماتیک"), TPSA: T("Polar surface (Å²)", "سطح قطبی (Å²)") };
 
 document.addEventListener("DOMContentLoaded", async () => {
-  ["p-logp", "p-mw", "p-hist"].forEach((id) => { document.getElementById(id).innerHTML = loadingBox("Loading data…"); });
+  ["p-logp", "p-mw", "p-hist"].forEach((id) => { document.getElementById(id).innerHTML = loadingBox(T("Loading data…", "در حال بارگذاری داده‌ها…")); });
   try {
     DATA = await api("/api/dataset");
   } catch (err) {
@@ -38,10 +38,10 @@ function stats() {
   const count = (lo, hi) => y.filter((v) => v >= lo && v < hi).length;
   const box = (label, value, sub) => `<div class="card"><div class="kicker">${label}</div><div class="big-number" style="font-size:2.2rem;margin-top:6px">${value}</div><div class="small muted">${sub}</div></div>`;
   document.getElementById("stats").innerHTML =
-    box("Molecules", DATA.length.toLocaleString(), "after cleaning AqSolDB") +
-    box("logS range", `${Math.min(...y).toFixed(0)} to ${Math.max(...y).toFixed(0)}`, "a factor of 10¹⁵ in solubility!") +
-    box("Insoluble", `${Math.round(100 * count(-99, -4) / y.length)}%`, "logS below −4") +
-    box("Highly soluble", `${Math.round(100 * count(0, 99) / y.length)}%`, "logS above 0");
+    box(T("Molecules", "مولکول‌ها"), DATA.length.toLocaleString("en-US"), T("after cleaning AqSolDB", "پس از پاک‌سازی AqSolDB")) +
+    box(T("logS range", "بازهٔ logS"), `<span class="ltr">${Math.min(...y).toFixed(0)} … ${Math.max(...y).toFixed(0)}</span>`, T("a factor of 10¹⁵ in solubility!", "یعنی ضریب 10¹⁵ در انحلال‌پذیری!")) +
+    box(T("Insoluble", "نامحلول"), `${Math.round(100 * count(-99, -4) / y.length)}%`, T("logS below −4", "logS کمتر از −4")) +
+    box(T("Highly soluble", "بسیار محلول"), `${Math.round(100 * count(0, 99) / y.length)}%`, T("logS above 0", "logS بیشتر از 0"));
   document.getElementById("r-logp").textContent = corr(DATA.map((d) => d.logP), y).toFixed(2);
   document.getElementById("r-mw").textContent = corr(DATA.map((d) => d.MW), y).toFixed(2);
 }
@@ -66,26 +66,26 @@ function scatter(id, xKey, xTitle) {
     marker: { size: 4, color: css("--line") }, hoverinfo: "skip" });
   Plotly.newPlot(id, traces, plotLayout({ showlegend: false,
     xaxis: { title: xTitle, gridcolor: css("--line"), zerolinecolor: css("--line"), range: xKey === "logP" ? [-8, 14] : [0, 1300] },
-    yaxis: { title: "Measured logS (log mol/L)", gridcolor: css("--line"), zerolinecolor: css("--line") } }), PLOT_CONFIG);
+    yaxis: { title: T("Measured logS (log mol/L)", "logS اندازه‌گیری‌شده"), gridcolor: css("--line"), zerolinecolor: css("--line") } }), PLOT_CONFIG);
   const el = document.getElementById(id);
   el.removeAllListeners && el.removeAllListeners("plotly_click");
   el.on("plotly_click", (ev) => { const p = ev.points[0]; if (p && p.customdata) location.href = `/?q=${encodeURIComponent(p.customdata)}`; });
 }
 
 function drawScatter() {
-  scatter("p-logp", "logP", "logP (oiliness)");
-  scatter("p-mw", "MW", "Molecular weight (g/mol)");
+  scatter("p-logp", "logP", T("logP (oiliness)", "logP (چربی‌دوستی)"));
+  scatter("p-mw", "MW", T("Molecular weight (g/mol)", "جرم مولی (g/mol)"));
 }
 
 function drawHist() {
   const bands = [[-14, -4, "--cls-insol"], [-4, -2, "--cls-slight"], [-2, 0, "--cls-sol"], [0, 3, "--cls-high"]];
   const shapes = bands.map(([a, b, c]) => ({ type: "rect", xref: "x", yref: "paper", x0: a, x1: b, y0: 0, y1: 1,
     fillcolor: css(c), opacity: 0.08, line: { width: 0 } }));
-  const annotations = [["Insoluble", -7], ["Slightly", -3], ["Soluble", -1], ["Highly", 1.2]].map(([t, x]) =>
+  const annotations = [[T("Insoluble", "نامحلول"), -7], [T("Slightly", "کم‌محلول"), -3], [T("Soluble", "محلول"), -1], [T("Highly", "بسیار محلول"), 1.2]].map(([t, x]) =>
     ({ x, y: 1, yref: "paper", text: t, showarrow: false, font: { size: 12, color: css("--ink-3") }, yanchor: "bottom" }));
   Plotly.newPlot("p-hist", [{ type: "histogram", x: DATA.map((d) => d.logS), xbins: { size: 0.25 },
-    marker: { color: css("--accent"), line: { width: 0 } }, hovertemplate: "logS %{x}<br>%{y} molecules<extra></extra>" }],
+    marker: { color: css("--accent"), line: { width: 0 } }, hovertemplate: "logS %{x}<br>%{y}<extra></extra>" }],
     plotLayout({ shapes, annotations, bargap: 0.04,
-      xaxis: { title: "Measured logS (log mol/L)", gridcolor: css("--line"), range: [-13, 3] },
-      yaxis: { title: "Number of molecules", gridcolor: css("--line") } }), PLOT_CONFIG);
+      xaxis: { title: T("Measured logS (log mol/L)", "logS اندازه‌گیری‌شده"), gridcolor: css("--line"), range: [-13, 3] },
+      yaxis: { title: T("Number of molecules", "تعداد مولکول‌ها"), gridcolor: css("--line") } }), PLOT_CONFIG);
 }

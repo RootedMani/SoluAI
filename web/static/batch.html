@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en" data-title-fa="پیش‌بینی گروهی">
+<head>
+<title>SoluAI · Batch prediction</title>
+<meta name="description" content="Predict how well a molecule dissolves in water, and see why.">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/static/css/style.css">
+<script src="/static/js/boot.js"></script>
+<script src="/static/js/common.js"></script>
+<script src="/static/js/batch.js" defer></script>
+</head>
+<body>
+<main class="wrap">
+<section class="page-title">
+    <span class="eyebrow"><span data-l="en">Many at once</span><span data-l="fa">چندتا با هم</span></span>
+    <h1><span data-l="en">Batch prediction</span><span data-l="fa">پیش‌بینی گروهی</span></h1>
+    <p class="lead"><span data-l="en">Paste up to 200 names or SMILES (one per line), or load a CSV file, and download all predictions as a spreadsheet. Useful for a lab class list or a whole homework set.</span><span data-l="fa">تا 200 نام یا SMILES را وارد کنید (هر خط یکی) یا یک فایل CSV بارگذاری کنید و همهٔ پیش‌بینی‌ها را به‌صورت جدول دریافت کنید. برای فهرست مواد آزمایشگاه یا یک مجموعه تمرین کامل مناسب است.</span></p>
+  </section>
+  <div class="card">
+    <textarea class="area" id="list" spellcheck="false" placeholder="ethanol&#10;CCCCCCCCO&#10;aspirin&#10;NaCl"></textarea>
+    <div class="input-row">
+      <button class="btn" id="go"><span data-l="en">Predict all</span><span data-l="fa">پیش‌بینی همه</span></button>
+      <label class="btn ghost" style="cursor:pointer"><span data-l="en">Load CSV / TXT file</span><span data-l="fa">بارگذاری فایل CSV / TXT</span><input type="file" id="file" accept=".csv,.txt,.tsv,.smi" hidden></label>
+      <button class="btn ghost" id="sample"><span data-l="en">Use an example</span><span data-l="fa">یک نمونه بگذار</span></button>
+      <button class="btn outline" id="csv" hidden><span data-l="en">Download results (CSV)</span><span data-l="fa">دریافت نتیجه‌ها (CSV)</span></button>
+    </div>
+    <p class="hint" style="margin:12px 0 0"><span data-l="en">In a CSV with a header row, the column called <code>smiles</code> (or <code>name</code>) is used; otherwise the first column. Batch mode works fully offline: it knows the 225 built-in names (English or Persian), any SMILES, and salt formulas.</span><span data-l="fa">در فایل CSVِ دارای سطر عنوان، ستون <code>smiles</code> (یا <code>name</code>) خوانده می‌شود؛ وگرنه ستون نخست. حالت گروهی کاملاً بدون اینترنت کار می‌کند: 225 نام داخلی (فارسی یا انگلیسی)، هر SMILES و فرمول نمک‌ها را می‌شناسد.</span></p>
+  </div>
+  <div id="out" style="margin-top:20px" aria-live="polite"></div>
+</main>
+</body>
+</html>

@@ -91,6 +91,23 @@ Correlation between each feature's value and its SHAP push, over all training mo
   confirmed by several sources (G3/G5), the random-split RMSE is only ≈ 0.53, compared with ≈ 0.88
   on single-source molecules. Part of the remaining "error" is noise in the measurements themselves.
 
+## What is *not* the model (added in v1.1)
+
+The website now has tools around the model. They do not change the model or its scores, but two of
+them give answers that do **not** come from machine learning:
+
+* **Salts** (NaCl, AgCl, CaCO₃…) are answered by a hand-written engine of 8 textbook solubility
+  rules (`ionic.py`), checked against 50 measured values. Its limits: no temperature, pH,
+  complex ions or common-ion effect, and borderline salts (PbCl₂, Ag₂SO₄, Ca(OH)₂) are fuzzy.
+* **"Measured in the lab"** values are looked up in the training data, not predicted.
+
+"Make it more soluble" does use the model, on molecules it invents by simple edits. Those
+molecules can be outside the model's experience, may be impossible to make, and may lose the
+property that made the original molecule useful. Treat them as ideas for discussion.
+
+The quiz and the "kitchen test" use molecules from the training data, so the model's score there
+is flattering. The honest numbers are the held-out test scores above.
+
 ## Failure cases (real examples from the test sets)
 
 | Molecule | Measured | Predicted | What went wrong |

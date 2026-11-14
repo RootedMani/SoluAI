@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en" data-title-fa="روندها">
+<head>
+<title>SoluAI · Trends</title>
+<meta name="description" content="Predict how well a molecule dissolves in water, and see why.">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/static/css/style.css">
+<script src="/static/js/boot.js"></script>
+<script src="/static/js/common.js"></script>
+<script src="/static/vendor/plotly-2.35.2.min.js" defer></script>
+<script src="/static/js/series.js" defer></script>
+</head>
+<body>
+<main class="wrap">
+<section class="page-title">
+    <span class="eyebrow"><span data-l="en">Homologous series</span><span data-l="fa">سری‌های همولوگ</span></span>
+    <h1><span data-l="en">One more carbon, how much less soluble?</span><span data-l="fa">یک کربن بیشتر، چقدر انحلال‌پذیری کمتر؟</span></h1>
+    <p class="lead"><span data-l="en">A homologous series is a family of molecules that differ only by CH₂ units. As the non-polar chain grows, the polar head group matters less and solubility falls in an almost straight line. Lines are SoluAI's predictions; diamonds are lab measurements.</span><span data-l="fa">سری همولوگ خانواده‌ای از مولکول‌هاست که فقط در تعداد واحدهای ‎CH₂‎ با هم فرق دارند. هرچه زنجیر ناقطبی بلندتر شود، اثر سرِ قطبی کمتر می‌شود و انحلال‌پذیری تقریباً روی یک خط راست پایین می‌آید. خط‌ها پیش‌بینی SoluAI و لوزی‌ها اندازه‌گیری آزمایشگاهی‌اند.</span></p>
+  </section>
+  <div class="card">
+    <div class="row spread">
+      <div class="chips" id="series-chips"></div>
+      <label class="row small muted" style="cursor:pointer"><input type="checkbox" id="classic"> <span data-l="en">show the classic formula (dotted)</span><span data-l="fa">نمایش فرمول کلاسیک (نقطه‌چین)</span></label>
+    </div>
+    <div id="plot" class="plot" style="min-height:460px;margin-top:12px"></div>
+    <p class="small muted"><span data-l="en">Click a point to open that molecule in the predictor. The first members (1 to 3 carbons) mix with water completely, so the straight-line trend only starts at about 4 carbons.</span><span data-l="fa">برای باز کردن هر مولکول در صفحهٔ پیش‌بینی روی نقطهٔ آن کلیک کنید. عضوهای نخست (1 تا 3 کربن) کاملاً با آب مخلوط می‌شوند؛ بنابراین روند خطی از حدود 4 کربن آغاز می‌شود.</span></p>
+  </div>
+  <div class="grid grid-4" id="cards" style="margin-top:20px"></div>
+  <div class="card" style="margin-top:20px"><div class="prose">
+    <h2><span data-l="en">Why is it a straight line?</span><span data-l="fa">چرا خط راست است؟</span></h2>
+    <p><span data-l="en">Every extra CH₂ adds the same amount of non-polar surface, and water has to pay the same energy price to make room for it. Equal steps in energy mean equal steps in the <b>logarithm</b> of solubility, so logS drops by a constant amount (about 0.5 to 0.6) per carbon. That is a factor of roughly 4 each time.</span><span data-l="fa">هر ‎CH₂‎ اضافه همان مقدار سطح ناقطبی اضافه می‌کند و آب باید همان بهای انرژی را برای جا دادن آن بپردازد. گام‌های برابر در انرژی یعنی گام‌های برابر در <b>لگاریتم</b> انحلال‌پذیری؛ پس logS با هر کربن به اندازهٔ ثابتی (حدود 0.5 تا 0.6) کم می‌شود؛ یعنی هر بار تقریباً 4 برابر.</span></p>
+    <p><span data-l="en">Compare the families: for the same number of carbons, alcohols, acids and amines sit far above alkanes and chloroalkanes, because their head groups can hydrogen-bond with water.</span><span data-l="fa">خانواده‌ها را مقایسه کنید: با تعداد کربن برابر، الکل‌ها، اسیدها و آمین‌ها بسیار بالاتر از آلکان‌ها و کلروآلکان‌ها قرار می‌گیرند، چون سرِ قطبی آن‌ها می‌تواند با آب پیوند هیدروژنی بدهد.</span></p>
+  </div></div>
+</main>
+</body>
+</html>

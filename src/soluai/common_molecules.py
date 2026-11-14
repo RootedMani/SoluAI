@@ -1,4 +1,4 @@
-"""Offline list of common molecules (works without internet).
+"""Offline list of ~225 common molecules (works without internet).
 
 Each entry: name -> (SMILES, category). Synonyms point to the same molecule.
 """
@@ -72,6 +72,181 @@ COMMON: dict[str, tuple[str, str]] = {
     "camphor": ("CC1(C)C2CCC1(C)C(=O)C2", "Everyday & drugs"),
     "capsaicin": ("COc1cc(CNC(=O)CCCC/C=C/C(C)C)ccc1O", "Everyday & drugs"),
     "DDT": ("ClC(Cl)(Cl)C(c1ccc(Cl)cc1)c1ccc(Cl)cc1", "Everyday & drugs"),
+    # More: Hydrocarbons
+    "methane": ("C", "Hydrocarbons"),
+    "ethane": ("CC", "Hydrocarbons"),
+    "propane": ("CCC", "Hydrocarbons"),
+    "butane": ("CCCC", "Hydrocarbons"),
+    "pentane": ("CCCCC", "Hydrocarbons"),
+    "heptane": ("CCCCCCC", "Hydrocarbons"),
+    "decane": ("CCCCCCCCCC", "Hydrocarbons"),
+    "dodecane": ("CCCCCCCCCCCC", "Hydrocarbons"),
+    "cyclopentane": ("C1CCCC1", "Hydrocarbons"),
+    "cyclohexene": ("C1=CCCCC1", "Hydrocarbons"),
+    "ethene": ("C=C", "Hydrocarbons"),
+    "propene": ("CC=C", "Hydrocarbons"),
+    "1-hexene": ("CCCCC=C", "Hydrocarbons"),
+    "ethyne": ("C#C", "Hydrocarbons"),
+    "isooctane": ("CC(C)CC(C)(C)C", "Hydrocarbons"),
+    "limonene": ("CC(=C)C1CCC(C)=CC1", "Hydrocarbons"),
+    # More: Alcohols
+    "1-heptanol": ("CCCCCCCO", "Alcohols"),
+    "1-nonanol": ("CCCCCCCCCO", "Alcohols"),
+    "1-decanol": ("CCCCCCCCCCO", "Alcohols"),
+    "1-dodecanol": ("CCCCCCCCCCCCO", "Alcohols"),
+    "2-butanol": ("CCC(C)O", "Alcohols"),
+    "tert-butanol": ("CC(C)(C)O", "Alcohols"),
+    "cyclohexanol": ("OC1CCCCC1", "Alcohols"),
+    "benzyl alcohol": ("OCc1ccccc1", "Alcohols"),
+    "propylene glycol": ("CC(O)CO", "Alcohols"),
+    "sorbitol": ("OC[C@H](O)[C@@H](O)[C@H](O)[C@H](O)CO", "Alcohols"),
+    "xylitol": ("OC[C@H](O)[C@@H](O)[C@H](O)CO", "Alcohols"),
+    "geraniol": ("CC(C)=CCC/C(C)=C/CO", "Alcohols"),
+    "linalool": ("CC(C)=CCCC(C)(O)C=C", "Alcohols"),
+    # More: Sugars & polar
+    "fructose": ("OC[C@H]1OC(O)(CO)[C@@H](O)[C@@H]1O", "Sugars & polar"),
+    "lactose": ("OC[C@H]1O[C@@H](O[C@H]2[C@H](O)[C@@H](O)C(O)O[C@@H]2CO)[C@H](O)[C@@H](O)[C@H]1O", "Sugars & polar"),
+    "formamide": ("NC=O", "Sugars & polar"),
+    "acetamide": ("CC(N)=O", "Sugars & polar"),
+    "dimethylformamide": ("CN(C)C=O", "Sugars & polar"),
+    "formaldehyde": ("C=O", "Sugars & polar"),
+    "acetaldehyde": ("CC=O", "Sugars & polar"),
+    "butanone": ("CCC(C)=O", "Sugars & polar"),
+    "tetrahydrofuran": ("C1CCOC1", "Sugars & polar"),
+    "1,4-dioxane": ("C1COCCO1", "Sugars & polar"),
+    "methylamine": ("CN", "Sugars & polar"),
+    "ethylamine": ("CCN", "Sugars & polar"),
+    "triethylamine": ("CCN(CC)CC", "Sugars & polar"),
+    "diethylamine": ("CCNCC", "Sugars & polar"),
+    # More: Acids
+    "formic acid": ("OC=O", "Acids"),
+    "propanoic acid": ("CCC(=O)O", "Acids"),
+    "butanoic acid": ("CCCC(=O)O", "Acids"),
+    "octanoic acid": ("CCCCCCCC(=O)O", "Acids"),
+    "decanoic acid": ("CCCCCCCCCC(=O)O", "Acids"),
+    "lauric acid": ("CCCCCCCCCCCC(=O)O", "Acids"),
+    "palmitic acid": ("CCCCCCCCCCCCCCCC(=O)O", "Acids"),
+    "stearic acid": ("CCCCCCCCCCCCCCCCCC(=O)O", "Acids"),
+    "oleic acid": ("CCCCCCCC/C=C\\CCCCCCCC(=O)O", "Acids"),
+    "oxalic acid": ("OC(=O)C(=O)O", "Acids"),
+    "malonic acid": ("OC(=O)CC(=O)O", "Acids"),
+    "succinic acid": ("OC(=O)CCC(=O)O", "Acids"),
+    "adipic acid": ("OC(=O)CCCCC(=O)O", "Acids"),
+    "tartaric acid": ("OC(=O)[C@H](O)[C@@H](O)C(=O)O", "Acids"),
+    "malic acid": ("OC(=O)CC(O)C(=O)O", "Acids"),
+    "fumaric acid": ("OC(=O)/C=C/C(=O)O", "Acids"),
+    "maleic acid": ("OC(=O)/C=C\\C(=O)O", "Acids"),
+    "phthalic acid": ("OC(=O)c1ccccc1C(=O)O", "Acids"),
+    "terephthalic acid": ("OC(=O)c1ccc(cc1)C(=O)O", "Acids"),
+    "cinnamic acid": ("OC(=O)/C=C/c1ccccc1", "Acids"),
+    "gallic acid": ("OC(=O)c1cc(O)c(O)c(O)c1", "Acids"),
+    "picric acid": ("Oc1c(cc(cc1[N+](=O)[O-])[N+](=O)[O-])[N+](=O)[O-]", "Acids"),
+    # More: Aromatics
+    "o-xylene": ("Cc1ccccc1C", "Aromatics"),
+    "p-xylene": ("Cc1ccc(C)cc1", "Aromatics"),
+    "cumene": ("CC(C)c1ccccc1", "Aromatics"),
+    "anisole": ("COc1ccccc1", "Aromatics"),
+    "acetophenone": ("CC(=O)c1ccccc1", "Aromatics"),
+    "benzonitrile": ("N#Cc1ccccc1", "Aromatics"),
+    "bromobenzene": ("Brc1ccccc1", "Aromatics"),
+    "fluorobenzene": ("Fc1ccccc1", "Aromatics"),
+    "1,4-dichlorobenzene": ("Clc1ccc(Cl)cc1", "Aromatics"),
+    "hexachlorobenzene": ("Clc1c(Cl)c(Cl)c(Cl)c(Cl)c1Cl", "Aromatics"),
+    "catechol": ("Oc1ccccc1O", "Aromatics"),
+    "resorcinol": ("Oc1cccc(O)c1", "Aromatics"),
+    "hydroquinone": ("Oc1ccc(O)cc1", "Aromatics"),
+    "p-cresol": ("Cc1ccc(O)cc1", "Aromatics"),
+    "1-naphthol": ("Oc1cccc2ccccc12", "Aromatics"),
+    "2-naphthol": ("Oc1ccc2ccccc2c1", "Aromatics"),
+    "phenanthrene": ("c1ccc2c(c1)ccc1ccccc12", "Aromatics"),
+    "benzo[a]pyrene": ("c1ccc2c(c1)cc1ccc3cccc4ccc2c1c34", "Aromatics"),
+    "indole": ("c1ccc2[nH]ccc2c1", "Aromatics"),
+    "quinoline": ("c1ccc2ncccc2c1", "Aromatics"),
+    "pyrrole": ("c1cc[nH]c1", "Aromatics"),
+    "furan": ("c1ccoc1", "Aromatics"),
+    "thiophene": ("c1ccsc1", "Aromatics"),
+    "imidazole": ("c1c[nH]cn1", "Aromatics"),
+    "benzophenone": ("O=C(c1ccccc1)c1ccccc1", "Aromatics"),
+    "2,4,6-trinitrotoluene": ("Cc1c(cc(cc1[N+](=O)[O-])[N+](=O)[O-])[N+](=O)[O-]", "Aromatics"),
+    # More: Amino acids & vitamins
+    "valine": ("CC(C)[C@H](N)C(=O)O", "Amino acids & vitamins"),
+    "leucine": ("CC(C)C[C@H](N)C(=O)O", "Amino acids & vitamins"),
+    "phenylalanine": ("N[C@@H](Cc1ccccc1)C(=O)O", "Amino acids & vitamins"),
+    "tryptophan": ("N[C@@H](Cc1c[nH]c2ccccc12)C(=O)O", "Amino acids & vitamins"),
+    "tyrosine": ("N[C@@H](Cc1ccc(O)cc1)C(=O)O", "Amino acids & vitamins"),
+    "serine": ("N[C@@H](CO)C(=O)O", "Amino acids & vitamins"),
+    "proline": ("OC(=O)[C@@H]1CCCN1", "Amino acids & vitamins"),
+    "glutamic acid": ("N[C@@H](CCC(=O)O)C(=O)O", "Amino acids & vitamins"),
+    "aspartic acid": ("N[C@@H](CC(=O)O)C(=O)O", "Amino acids & vitamins"),
+    "lysine": ("NCCCC[C@H](N)C(=O)O", "Amino acids & vitamins"),
+    "cysteine": ("N[C@@H](CS)C(=O)O", "Amino acids & vitamins"),
+    "methionine": ("CSCC[C@H](N)C(=O)O", "Amino acids & vitamins"),
+    "histidine": ("N[C@@H](Cc1c[nH]cn1)C(=O)O", "Amino acids & vitamins"),
+    "niacin": ("OC(=O)c1cccnc1", "Amino acids & vitamins"),
+    "nicotinamide": ("NC(=O)c1cccnc1", "Amino acids & vitamins"),
+    "retinol": ("CC1=C(/C=C/C(C)=C/C=C/C(C)=C/CO)C(C)(C)CCC1", "Amino acids & vitamins"),
+    "uric acid": ("O=c1[nH]c(=O)c2[nH]c(=O)[nH]c2[nH]1", "Amino acids & vitamins"),
+    "creatine": ("CN(CC(=O)O)C(N)=N", "Amino acids & vitamins"),
+    "taurine": ("NCCS(=O)(=O)O", "Amino acids & vitamins"),
+    "adenine": ("Nc1ncnc2[nH]cnc12", "Amino acids & vitamins"),
+    "thymine": ("Cc1c[nH]c(=O)[nH]c1=O", "Amino acids & vitamins"),
+    "uracil": ("O=c1cc[nH]c(=O)[nH]1", "Amino acids & vitamins"),
+    "cytosine": ("Nc1cc[nH]c(=O)n1", "Amino acids & vitamins"),
+    "guanine": ("Nc1nc2[nH]cnc2c(=O)[nH]1", "Amino acids & vitamins"),
+    # More: Everyday & drugs
+    "naproxen": ("COc1ccc2cc(ccc2c1)[C@H](C)C(=O)O", "Everyday & drugs"),
+    "diclofenac": ("OC(=O)Cc1ccccc1Nc1c(Cl)cccc1Cl", "Everyday & drugs"),
+    "morphine": ("CN1CC[C@]23c4c5ccc(O)c4O[C@H]2[C@@H](O)C=C[C@H]3[C@H]1C5", "Everyday & drugs"),
+    "codeine": ("COc1ccc2C[C@@H]3[C@@H]4C=C[C@H](O)[C@@H]5Oc1c2[C@]45CCN3C", "Everyday & drugs"),
+    "testosterone": ("C[C@]12CC[C@H]3[C@@H](CCC4=CC(=O)CC[C@]34C)[C@@H]1CC[C@@H]2O", "Everyday & drugs"),
+    "estradiol": ("C[C@]12CC[C@@H]3c4ccc(O)cc4CC[C@H]3[C@@H]1CC[C@@H]2O", "Everyday & drugs"),
+    "cortisol": ("C[C@]12CCC(=O)C=C1CC[C@H]1[C@@H]3CC[C@](O)(C(=O)CO)[C@@]3(C)C[C@H](O)[C@H]12", "Everyday & drugs"),
+    "progesterone": ("CC(=O)[C@H]1CC[C@H]2[C@@H]3CCC4=CC(=O)CC[C@]4(C)[C@H]3CC[C@]12C", "Everyday & drugs"),
+    "lidocaine": ("CCN(CC)CC(=O)Nc1c(C)cccc1C", "Everyday & drugs"),
+    "benzocaine": ("CCOC(=O)c1ccc(N)cc1", "Everyday & drugs"),
+    "sulfanilamide": ("Nc1ccc(cc1)S(N)(=O)=O", "Everyday & drugs"),
+    "metformin": ("CN(C)C(=N)NC(N)=N", "Everyday & drugs"),
+    "diazepam": ("CN1C(=O)CN=C(c2ccccc2)c2cc(Cl)ccc12", "Everyday & drugs"),
+    "warfarin": ("CC(=O)CC(c1ccccc1)c1c(O)c2ccccc2oc1=O", "Everyday & drugs"),
+    "phenobarbital": ("CCC1(C(=O)NC(=O)NC1=O)c1ccccc1", "Everyday & drugs"),
+    "chloramphenicol": ("OC[C@@H](NC(=O)C(Cl)Cl)[C@H](O)c1ccc(cc1)[N+](=O)[O-]", "Everyday & drugs"),
+    "atropine": ("CN1C2CCC1CC(C2)OC(=O)C(CO)c1ccccc1", "Everyday & drugs"),
+    "quinine": ("COc1ccc2nccc([C@@H](O)[C@H]3C[C@@H]4CCN3C[C@@H]4C=C)c2c1", "Everyday & drugs"),
+    # More: Food & fragrance
+    "saccharin": ("O=C1NS(=O)(=O)c2ccccc12", "Food & fragrance"),
+    "aspartame": ("COC(=O)[C@H](Cc1ccccc1)NC(=O)[C@@H](N)CC(=O)O", "Food & fragrance"),
+    "cinnamaldehyde": ("O=C/C=C/c1ccccc1", "Food & fragrance"),
+    "eugenol": ("COc1cc(CC=C)ccc1O", "Food & fragrance"),
+    "coumarin": ("O=c1ccc2ccccc2o1", "Food & fragrance"),
+    "methyl salicylate": ("COC(=O)c1ccccc1O", "Food & fragrance"),
+    "isoamyl acetate": ("CC(C)CCOC(C)=O", "Food & fragrance"),
+    "ethyl butanoate": ("CCCC(=O)OCC", "Food & fragrance"),
+    "benzyl acetate": ("CC(=O)OCc1ccccc1", "Food & fragrance"),
+    "citral": ("CC(C)=CCC/C(C)=C/C=O", "Food & fragrance"),
+    "carvone": ("CC(=C)C1CC=C(C)C(=O)C1", "Food & fragrance"),
+    "piperine": ("O=C(/C=C/C=C/c1ccc2OCOc2c1)N1CCCCC1", "Food & fragrance"),
+    "curcumin": ("COc1cc(/C=C/C(=O)CC(=O)/C=C/c2ccc(O)c(OC)c2)ccc1O", "Food & fragrance"),
+    "theophylline": ("Cn1c(=O)c2[nH]cnc2n(C)c1=O", "Food & fragrance"),
+    "sorbic acid": ("C/C=C/C=C/C(=O)O", "Food & fragrance"),
+    "butylated hydroxytoluene": ("Cc1cc(c(O)c(c1)C(C)(C)C)C(C)(C)C", "Food & fragrance"),
+    "triacetin": ("CC(=O)OCC(COC(C)=O)OC(C)=O", "Food & fragrance"),
+    # More: Pesticides & pollutants
+    "atrazine": ("CCNc1nc(Cl)nc(NC(C)C)n1", "Pesticides & pollutants"),
+    "lindane": ("ClC1C(Cl)C(Cl)C(Cl)C(Cl)C1Cl", "Pesticides & pollutants"),
+    "parathion": ("CCOP(=S)(OCC)Oc1ccc(cc1)[N+](=O)[O-]", "Pesticides & pollutants"),
+    "malathion": ("CCOC(=O)CC(SP(=S)(OC)OC)C(=O)OCC", "Pesticides & pollutants"),
+    "carbaryl": ("CNC(=O)Oc1cccc2ccccc12", "Pesticides & pollutants"),
+    "glyphosate": ("OC(=O)CNCP(O)(O)=O", "Pesticides & pollutants"),
+    "2,4-D": ("OC(=O)COc1ccc(Cl)cc1Cl", "Pesticides & pollutants"),
+    "pentachlorophenol": ("Oc1c(Cl)c(Cl)c(Cl)c(Cl)c1Cl", "Pesticides & pollutants"),
+    "bisphenol A": ("CC(C)(c1ccc(O)cc1)c1ccc(O)cc1", "Pesticides & pollutants"),
+    "dibutyl phthalate": ("CCCCOC(=O)c1ccccc1C(=O)OCCCC", "Pesticides & pollutants"),
+    "trichloroethylene": ("ClC=C(Cl)Cl", "Pesticides & pollutants"),
+    "tetrachloroethylene": ("ClC(Cl)=C(Cl)Cl", "Pesticides & pollutants"),
+    "vinyl chloride": ("C=CCl", "Pesticides & pollutants"),
+    "dieldrin": ("ClC1=C(Cl)C2(Cl)C3C4CC(C5OC45)C3C1(Cl)C2(Cl)Cl", "Pesticides & pollutants"),
+    "permethrin": ("CC1(C)C(C=C(Cl)Cl)C1C(=O)OCc1cccc(Oc2ccccc2)c1", "Pesticides & pollutants"),
+    "triclosan": ("Oc1cc(Cl)ccc1Oc1ccc(Cl)cc1Cl", "Pesticides & pollutants"),
 }
 
 SYNONYMS: dict[str, str] = {
@@ -85,20 +260,77 @@ SYNONYMS: dict[str, str] = {
     "acetylsalicylic acid": "aspirin", "dmso": "dimethyl sulfoxide", "ether": "diethyl ether",
     "methylbenzene": "toluene", "trichloromethane": "chloroform", "tetrachloromethane": "carbon tetrachloride",
     "methylene chloride": "dichloromethane", "propanone": "acetone", "carbamide": "urea",
+    "ethylene": "ethene", "propylene": "propene", "acetylene": "ethyne", "mek": "butanone", "thf": "tetrahydrofuran",
+    "dmf": "dimethylformamide", "dioxane": "1,4-dioxane", "tnt": "2,4,6-trinitrotoluene", "bht": "butylated hydroxytoluene",
+    "bpa": "bisphenol A", "vitamin b3": "niacin", "nicotinic acid": "niacin", "vitamin a": "retinol",
+    "hydrocortisone": "cortisol", "oestradiol": "estradiol", "butyric acid": "butanoic acid",
+    "propionic acid": "propanoic acid", "caprylic acid": "octanoic acid", "capric acid": "decanoic acid",
+    "dodecanoic acid": "lauric acid", "hexadecanoic acid": "palmitic acid", "octadecanoic acid": "stearic acid",
+    "methanoic acid": "formic acid", "wintergreen oil": "methyl salicylate", "banana oil": "isoamyl acetate",
+    "perchloroethylene": "tetrachloroethylene", "fruit sugar": "fructose", "milk sugar": "lactose",
+    "antifreeze": "ethylene glycol", "nail polish remover": "acetone", "mothballs": "naphthalene",
+    "moth balls": "naphthalene", "blood sugar": "glucose", "grain alcohol": "ethanol", "wood alcohol": "methanol",
+    "t-butanol": "tert-butanol", "heptanol": "1-heptanol", "decanol": "1-decanol", "xylene": "p-xylene",
+    "cresol": "p-cresol", "tce": "trichloroethylene", "methyl ethyl ketone": "butanone",
+}
+
+#: Persian names: Persian -> official English name in ``COMMON``. Typing a Persian name works,
+#: and the Persian version of the website shows these on the molecule buttons.
+FA_NAMES: dict[str, str] = {
+    "متانول": "methanol", "اتانول": "ethanol", "الکل": "ethanol", "۱-پروپانول": "1-propanol", "۲-پروپانول": "2-propanol",
+    "ایزوپروپانول": "2-propanol", "۱-بوتانول": "1-butanol", "۱-پنتانول": "1-pentanol", "۱-هگزانول": "1-hexanol",
+    "۱-اوکتانول": "1-octanol", "اتیلن گلیکول": "ethylene glycol", "ضدیخ": "ethylene glycol", "گلیسرول": "glycerol",
+    "گلیسیرین": "glycerol", "منتول": "menthol", "کلسترول": "cholesterol", "گلوکز": "glucose", "ساکارز": "sucrose",
+    "شکر": "sucrose", "قند": "sucrose", "فروکتوز": "fructose", "لاکتوز": "lactose", "اوره": "urea", "گلیسین": "glycine",
+    "آلانین": "alanine", "استون": "acetone", "استونیتریل": "acetonitrile", "استیک اسید": "acetic acid",
+    "اسید استیک": "acetic acid", "سرکه": "acetic acid", "لاکتیک اسید": "lactic acid", "سیتریک اسید": "citric acid",
+    "اسید سیتریک": "citric acid", "جوهر لیمو": "citric acid", "بنزوئیک اسید": "benzoic acid",
+    "سالیسیلیک اسید": "salicylic acid", "آسکوربیک اسید": "ascorbic acid", "ویتامین ث": "ascorbic acid",
+    "ویتامین سی": "ascorbic acid", "فرمیک اسید": "formic acid", "اگزالیک اسید": "oxalic acid",
+    "استئاریک اسید": "stearic acid", "پالمیتیک اسید": "palmitic acid", "اولئیک اسید": "oleic acid",
+    "متان": "methane", "اتان": "ethane", "پروپان": "propane", "بوتان": "butane", "پنتان": "pentane", "هگزان": "hexane",
+    "هپتان": "heptane", "اوکتان": "octane", "دکان": "decane", "سیکلوهگزان": "cyclohexane", "اتن": "ethene",
+    "اتیلن": "ethene", "اتین": "ethyne", "استیلن": "ethyne", "دی‌اتیل اتر": "diethyl ether", "اتر": "diethyl ether",
+    "اتیل استات": "ethyl acetate", "کلروفرم": "chloroform", "دی‌کلرومتان": "dichloromethane",
+    "کربن تتراکلرید": "carbon tetrachloride", "بنزن": "benzene", "تولوئن": "toluene", "فنول": "phenol",
+    "آنیلین": "aniline", "پیریدین": "pyridine", "نفتالن": "naphthalene", "نفتالین": "naphthalene",
+    "آنتراسن": "anthracene", "نیتروبنزن": "nitrobenzene", "کلروبنزن": "chlorobenzene", "استیرن": "styrene",
+    "کافئین": "caffeine", "آسپرین": "aspirin", "استامینوفن": "paracetamol", "پاراستامول": "paracetamol",
+    "ایبوپروفن": "ibuprofen", "نیکوتین": "nicotine", "وانیلین": "vanillin", "کافور": "camphor",
+    "کپسایسین": "capsaicin", "تئوبرومین": "theobromine", "تیمول": "thymol", "مورفین": "morphine",
+    "کدئین": "codeine", "تستوسترون": "testosterone", "ناپروکسن": "naproxen", "دیکلوفناک": "diclofenac",
+    "لیدوکائین": "lidocaine", "متفورمین": "metformin", "دیازپام": "diazepam", "ساخارین": "saccharin",
+    "آسپارتام": "aspartame", "کورکومین": "curcumin", "لیمونن": "limonene", "اوژنول": "eugenol",
+    "فرمالدهید": "formaldehyde", "استالدهید": "acetaldehyde", "سوربیتول": "sorbitol", "نیاسین": "niacin",
+    "رتینول": "retinol", "ویتامین آ": "retinol", "اوریک اسید": "uric acid", "تی‌ان‌تی": "2,4,6-trinitrotoluene", "سینامالدهید": "cinnamaldehyde",
+}
+
+#: Persian titles of the categories.
+FA_CATEGORIES: dict[str, str] = {
+    "Alcohols": "الکل‌ها", "Sugars & polar": "قندها و مولکول‌های قطبی", "Acids": "اسیدها",
+    "Hydrocarbons": "هیدروکربن‌ها و حلال‌ها", "Aromatics": "آروماتیک‌ها", "Everyday & drugs": "روزمره و داروها",
+    "Amino acids & vitamins": "آمینواسیدها و ویتامین‌ها", "Food & fragrance": "خوراکی و عطر",
+    "Pesticides & pollutants": "آفت‌کش‌ها و آلاینده‌ها",
 }
 
 #: Water is not predicted (it is the solvent), but users often try it.
-WATER_NAMES = {"water", "h2o", "o", "dihydrogen monoxide"}
+WATER_NAMES = {"water", "h2o", "o", "dihydrogen monoxide", "آب"}
 
 
 def lookup(name: str) -> tuple[str, str] | None:
     """Return ``(official_name, smiles)`` for a known name or synonym, else ``None``."""
-    key = name.strip().lower()
-    key = SYNONYMS.get(key, key)
+    key = " ".join(name.replace("\u200c", " ").split()).lower()
+    key = _FA_PLAIN.get(key, key)
+    key = SYNONYMS.get(key, key).lower()
     for official, (smiles, _cat) in COMMON.items():
         if official.lower() == key:
             return official, smiles
     return None
+
+
+def fa_name(official: str) -> str | None:
+    """Persian display name of a molecule in the list, if there is one."""
+    return _FA_DISPLAY.get(official)
 
 
 def all_names() -> list[str]:
@@ -113,3 +345,9 @@ INORGANIC_NAMES = {
     "copper sulfate", "agcl", "silver chloride", "baso4", "barium sulfate", "nh3", "ammonia",
     "co2", "carbon dioxide", "o2", "oxygen", "n2", "nitrogen", "kno3", "potassium nitrate",
 }
+
+# Lookup helpers for Persian names (half-spaces are treated like spaces).
+_FA_PLAIN = {" ".join(k.replace("\u200c", " ").split()): v for k, v in FA_NAMES.items()}
+_FA_DISPLAY: dict[str, str] = {}
+for _fa, _en in FA_NAMES.items():
+    _FA_DISPLAY.setdefault(_en, _fa)

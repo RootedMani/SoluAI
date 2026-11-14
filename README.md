@@ -1,14 +1,25 @@
 # SoluAI 💧: will it dissolve in water?
 
 **SoluAI predicts how well an organic molecule dissolves in water, and explains *why* in
-chemistry terms.** Type a name (`caffeine`), a SMILES string (`CCO`) or pick a molecule. You get:
+chemistry terms.** Type a name (`caffeine`, `کافئین`), a SMILES string (`CCO`), draw the molecule or pick one. You get:
 
 * the predicted solubility (logS in mol/L, and g/L) with a **90% confidence range**;
 * a solubility class on a colour scale (highly soluble → insoluble);
 * the 2D structure with **atoms coloured by how they affect solubility** (blue = helps, red = hurts);
 * a plain-language explanation, e.g. *"The five –OH groups increase solubility because they form
   hydrogen bonds with water."*;
-* a warning when the molecule is **outside the model's experience**.
+* a warning when the molecule is **outside the model's experience**;
+* the **lab value** (if known) and the **classic 2004 formula** next to the AI's answer;
+* everyday units: grams in a glass of water, and how many litres you need to dissolve 1 g.
+
+Around the model there is a small chemistry toolkit ([details](docs/features.md)):
+
+| | |
+|---|---|
+| **Draw** a molecule, or type one of 225 offline names (English or Persian) | **Salts:** NaCl, AgCl, CaCO₃… answered with the textbook solubility rules, plus a "will a precipitate form?" mixing lab |
+| **Make it more soluble:** the model tries small edits and ranks them | **Trends:** solubility along seven homologous series, prediction vs lab |
+| **Quiz:** which one dissolves better? You vs the AI | **Batch:** up to 200 molecules from a list or CSV, results as CSV |
+| **Persian / English** interface with right-to-left layout | **Works offline** and prints a one-page PDF report |
 
 It is a real, trained machine-learning model (LightGBM gradient boosting on RDKit descriptors and
 Morgan fingerprints), trained on 8,754 measured molecules from AqSolDB. It is **not** an LLM.
@@ -25,6 +36,10 @@ Morgan fingerprints), trained on 8,754 measured molecules from AqSolDB. It is **
 | ![Compare](docs/screenshots/compare-light.png) | ![Explore](docs/screenshots/explore-light.png) |
 | **How the model works** | **Dark mode** |
 | ![Model](docs/screenshots/model-light.png) | ![Dark](docs/screenshots/predict-dark.png) |
+| **Salts and the mixing lab** | **Trends** |
+| ![Salts](docs/screenshots/salts-light.png) | ![Trends](docs/screenshots/trends-light.png) |
+| **Quiz** | **Persian (فارسی)** |
+| ![Quiz](docs/screenshots/quiz-light.png) | ![Persian](docs/screenshots/predict-fa.png) |
 
 ## Quick start
 
@@ -40,10 +55,12 @@ python -m venv .venv && source .venv/bin/activate      # Windows: .venv\Scripts\
 pip install -r requirements.txt
 ```
 ```bash
-uvicorn web.main:app
+python run.py
 ```
 
-Then open <http://127.0.0.1:8000>. The trained model is included, so no training is needed.
+This starts the site and opens <http://127.0.0.1:8000> in your browser (same as `uvicorn web.main:app`).
+The trained model is included, so no training is needed. **No internet is needed either**: fonts,
+charts and the drawing editor are bundled. Only looking up unusual molecule names uses PubChem.
 
 **Retrain everything** (about 30 minutes, fully reproducible):
 
@@ -117,10 +134,14 @@ soluai/
 │   ├── groups.py            functional groups (SMARTS)
 │   ├── predict.py           load model, predict
 │   ├── resolve.py           name/SMILES → molecule, friendly errors, PubChem
-│   └── common_molecules.py  offline list of ~60 molecules
+│   ├── common_molecules.py  offline list of 225 molecules, with Persian names
+│   ├── ionic.py             salts: solubility rules, equations, mixing two solutions
+│   └── lab.py               series, "make it more soluble", quiz, batch, kitchen test
 ├── models/soluai-v1.0.0/    trained model + metadata (versioned)
 ├── results/                 metrics tables and data for the website
 ├── web/                     FastAPI server (main.py) + HTML/CSS/JS pages (static/)
+│   └── static/vendor/       bundled Plotly, JSME editor and fonts (see THIRD-PARTY.md)
+├── run.py                   start the site locally and open the browser
 ├── notebooks/               01_soluai_story.ipynb: the story with charts
 ├── docs/                    chemistry, model, model card, presentation guide, deployment
 ├── tests/                   pytest unit tests
@@ -130,10 +151,12 @@ soluai/
 ## Documentation
 
 * [docs/chemistry.md](docs/chemistry.md): the chemistry of solubility, for high school students
+* [docs/features.md](docs/features.md): the tools around the model (salts, trends, quiz, batch, Persian, offline)
 * [docs/model.md](docs/model.md): the ML pipeline step by step in simple language
 * [docs/model_card.md](docs/model_card.md): intended use, metrics, limitations, failure cases
 * [docs/presentation_guide.md](docs/presentation_guide.md): 6-minute talk, demo plan, Q&A
 * [docs/deployment.md](docs/deployment.md): putting the website online
+* The two Persian PDFs below describe version 1.0 (before the tools in docs/features.md were added).
 * [docs/soluai-documentation-fa.pdf](docs/soluai-documentation-fa.pdf): project documentation in Persian, for teachers (مستندات پروژه)
 * [docs/soluai-guide-fa.pdf](docs/soluai-guide-fa.pdf): complete guide in Persian (راهنمای کامل پروژه به فارسی)
 
@@ -141,6 +164,8 @@ soluai/
 
 * **AqSolDB:** Sorkun, Khetan & Er (2019), *Scientific Data* 6:143, [doi:10.1038/s41597-019-0151-1](https://doi.org/10.1038/s41597-019-0151-1). CC0.
 * **ESOL:** Delaney (2004), *J. Chem. Inf. Comput. Sci.* 44:1000–1005, [doi:10.1021/ci034243x](https://doi.org/10.1021/ci034243x), via MoleculeNet/DeepChem.
+* **Salt solubilities:** g/100 mL at 20 °C from the Wikipedia [Solubility table](https://en.wikipedia.org/wiki/Solubility_table) (CC BY-SA), which collects handbook values.
+* Bundled: [JSME](https://jsme-editor.github.io/) molecule editor (BSD-3), Inter, JetBrains Mono and Vazirmatn fonts (OFL). See [THIRD-PARTY.md](web/static/vendor/THIRD-PARTY.md).
 * Built with [RDKit](https://www.rdkit.org), [LightGBM](https://lightgbm.readthedocs.io), [scikit-learn](https://scikit-learn.org), [FastAPI](https://fastapi.tiangolo.com) and [Plotly.js](https://plotly.com/javascript/) (bundled, MIT).
 
 Code: MIT license. Datasets: see [data/raw/SOURCES.md](data/raw/SOURCES.md).

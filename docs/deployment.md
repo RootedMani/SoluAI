@@ -34,8 +34,12 @@ Every `git push` to `main` redeploys automatically.
 * **Memory:** the free plan has 512 MB. SoluAI uses about 250 MB (measured locally;
   see the README). This is why the website uses LightGBM's built-in SHAP rather
   than the heavier `shap` package.
-* **Name lookup** (e.g. typing "limonene") calls PubChem over the internet. If PubChem
-  is slow or down, the site still works with SMILES and the built-in list of ~60 molecules.
+* **Name lookup** for unusual names (e.g. typing "squalane") calls PubChem over the internet. If PubChem
+  is slow or down, the site still works with SMILES, drawing, salts and the built-in list of 225 molecules.
+* **No other internet is needed.** Fonts, charts and the drawing editor are bundled in
+  `web/static/vendor/`, so the same code runs on a laptop with no connection: `python run.py`.
+* **Show it on phones in the classroom** (no Render needed): run `python run.py --host 0.0.0.0` and
+  open `http://<your-laptop-IP>:8000` on any device on the same Wi-Fi.
 
 ## Troubleshooting
 

@@ -1,47 +1,42 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-title-fa="کاوش داده‌ها">
 <head>
 <title>SoluAI · Explore the data</title>
+<meta name="description" content="Predict how well a molecule dissolves in water, and see why.">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/css/style.css">
-<script>/* apply the saved (or system) theme before the page paints, to avoid a flash */
-(function(){var t=null;try{t=localStorage.getItem("soluai-theme")}catch(e){}
-if(!t){t=window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}
-document.documentElement.dataset.theme=t})();</script>
+<script src="/static/js/boot.js"></script>
 <script src="/static/js/common.js"></script>
 <script src="/static/vendor/plotly-2.35.2.min.js" defer></script>
 <script src="/static/js/explore.js" defer></script>
 </head>
 <body>
 <main class="wrap">
-  <section class="page-title">
-    <span class="eyebrow">AqSolDB · cleaned</span>
-    <h1>Explore the data</h1>
-    <p class="lead">These are the measured molecules the model learned from. Each dot is a real lab measurement. Click a dot to send that molecule to the predictor.</p>
+<section class="page-title">
+    <span class="eyebrow"><span data-l="en">AqSolDB · cleaned</span><span data-l="fa">AqSolDB · پاک‌سازی‌شده</span></span>
+    <h1><span data-l="en">Explore the data</span><span data-l="fa">کاوش داده‌ها</span></h1>
+    <p class="lead"><span data-l="en">These are the measured molecules the model learned from. Each dot is a real lab measurement. Click a dot to send that molecule to the predictor.</span><span data-l="fa">این‌ها مولکول‌های اندازه‌گیری‌شده‌ای هستند که مدل از آن‌ها یاد گرفته است. هر نقطه یک اندازه‌گیری واقعی آزمایشگاهی است. برای فرستادن هر مولکول به صفحهٔ پیش‌بینی روی نقطهٔ آن کلیک کنید.</span></p>
   </section>
   <div class="grid grid-4" id="stats"></div>
   <div class="card" style="margin-top:20px">
     <div class="input-row" style="margin-top:0;justify-content:space-between">
       <div class="segmented" id="color-by">
-        <button class="active" data-c="HBD">Colour: H-bond donors</button>
-        <button data-c="aromatic">Aromatic proportion</button>
-        <button data-c="TPSA">Polar surface</button>
+        <button class="active" data-c="HBD"><span data-l="en">Colour: H-bond donors</span><span data-l="fa">رنگ: دهنده‌های پیوند H</span></button>
+        <button data-c="aromatic"><span data-l="en">Aromatic proportion</span><span data-l="fa">سهم آروماتیک</span></button>
+        <button data-c="TPSA"><span data-l="en">Polar surface</span><span data-l="fa">سطح قطبی</span></button>
       </div>
-      <label class="field" style="flex:1;max-width:340px"><input id="filter" placeholder="Highlight molecules by name, e.g. acid" spellcheck="false"></label>
+      <label class="field" style="flex:1;max-width:340px"><input id="filter" dir="ltr" placeholder="Highlight molecules by name, e.g. acid" data-ph-fa="برجسته‌کردن با نام انگلیسی، مثلاً acid" spellcheck="false"></label>
     </div>
   </div>
   <div class="grid grid-2" style="margin-top:20px">
-    <div class="card"><div class="card-title"><h3>Solubility vs logP</h3><span class="small muted">"like dissolves like"</span></div><div id="p-logp" class="plot"></div>
-      <p class="small muted">The clearest trend in chemistry: the oilier the molecule (higher logP), the less it dissolves in water. Correlation r = <b id="r-logp">…</b></p></div>
-    <div class="card"><div class="card-title"><h3>Solubility vs molecular weight</h3><span class="small muted">size matters</span></div><div id="p-mw" class="plot"></div>
-      <p class="small muted">Bigger molecules need a bigger "hole" in water, so they tend to dissolve less, though there is a lot of spread. r = <b id="r-mw">…</b></p></div>
+    <div class="card"><div class="card-title"><h3><span data-l="en">Solubility vs logP</span><span data-l="fa">انحلال‌پذیری در برابر logP</span></h3><span class="small muted"><span data-l="en">"like dissolves like"</span><span data-l="fa">«شبیه، شبیه را حل می‌کند»</span></span></div><div id="p-logp" class="plot"></div>
+      <p class="small muted"><span data-l="en">The clearest trend in chemistry: the oilier the molecule (higher logP), the less it dissolves in water. Correlation r =</span><span data-l="fa">روشن‌ترین روند: هرچه مولکول چرب‌تر باشد (logP بالاتر)، کمتر در آب حل می‌شود. همبستگی r =</span> <b id="r-logp" class="ltr">…</b></p></div>
+    <div class="card"><div class="card-title"><h3><span data-l="en">Solubility vs molecular weight</span><span data-l="fa">انحلال‌پذیری در برابر جرم مولی</span></h3><span class="small muted"><span data-l="en">size matters</span><span data-l="fa">اندازه مهم است</span></span></div><div id="p-mw" class="plot"></div>
+      <p class="small muted"><span data-l="en">Bigger molecules need a bigger "hole" in water, so they tend to dissolve less, though there is a lot of spread. r =</span><span data-l="fa">مولکول‌های بزرگ‌تر «حفرهٔ» بزرگ‌تری در آب می‌خواهند و معمولاً کمتر حل می‌شوند؛ هرچند پراکندگی زیاد است. r =</span> <b id="r-mw" class="ltr">…</b></p></div>
   </div>
-  <div class="card" style="margin-top:20px"><div class="card-title"><h3>How soluble are the molecules?</h3><span class="small muted">distribution of logS</span></div><div id="p-hist" class="plot"></div></div>
+  <div class="card" style="margin-top:20px"><div class="card-title"><h3><span data-l="en">How soluble are the molecules?</span><span data-l="fa">مولکول‌ها چقدر محلول‌اند؟</span></h3><span class="small muted"><span data-l="en">distribution of logS</span><span data-l="fa">توزیع logS</span></span></div><div id="p-hist" class="plot"></div></div>
 </main>
 </body>
 </html>

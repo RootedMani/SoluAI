@@ -29,7 +29,7 @@ from rdkit.Chem import Lipinski, rdMolDescriptors
 from rdkit.Chem.Draw import rdMolDraw2D
 
 from .features import DESCRIPTOR_NAMES, PRETTY, descriptors
-from .groups import find_groups
+from .groups import GROUPS_FA, find_groups
 
 if TYPE_CHECKING:
     from .predict import Predictor
@@ -137,7 +137,7 @@ def draw_svg(mol: Chem.Mol, weights: np.ndarray | None = None, size: tuple[int, 
     o.clearBackground = False
     o.bondLineWidth = 2
     o.padding = 0.12
-    o.fixedFontSize = 18
+    o.fixedFontSize = 18 if size[0] >= 380 else 13
     o.additionalAtomLabelPadding = 0.12
     if weights is None:
         d.DrawMolecule(m)
@@ -184,8 +184,23 @@ def describe_groups(mol: Chem.Mol, weights: np.ndarray) -> list[dict[str, Any]]:
     return sorted(out, key=lambda x: -abs(x["effect"]))
 
 
-def group_sentence(item: dict[str, Any]) -> str:
+FA_NUMBERS = ["صفر", "یک", "دو", "سه", "چهار", "پنج", "شش", "هفت", "هشت", "نه", "ده"]
+
+
+def _group_sentence_fa(item: dict[str, Any]) -> str:
+    g, n, up = item["group"], item["count"], item["effect"] > 0
+    name, why_up, why_down = GROUPS_FA[g.key]
+    noun = name if n == 1 else f"{FA_NUMBERS[n] if n < len(FA_NUMBERS) else n} {name}"
+    if up == g.polar:
+        return f"{noun} انحلال‌پذیری را {'افزایش' if up else 'کاهش'} می‌دهد، چون {why_up if up else why_down}."
+    return (f"برخلاف انتظار، مدل فکر می‌کند {noun} این‌جا انحلال‌پذیری را کمی {'بالا' if up else 'پایین'} می‌برد؛ "
+            "اثر آن با بقیهٔ مولکول درهم شده است.")
+
+
+def group_sentence(item: dict[str, Any], lang: str = "en") -> str:
     """'The two –OH groups increase solubility because they form hydrogen bonds with water.'"""
+    if lang == "fa":
+        return _group_sentence_fa(item)
     g, n, up = item["group"], item["count"], item["effect"] > 0
     word = NUMBER_WORDS[n] if n < len(NUMBER_WORDS) else str(n)
     noun = g.label if n == 1 else f"{word} {g.plural}"
@@ -209,8 +224,32 @@ def _ratio(r: float) -> str:
     return f"{r / 1e9:,.0f} billion"
 
 
-def logp_sentence(logp: float) -> str:
+def _ratio_fa(r: float) -> str:
+    if r < 1000:
+        return f"{float(f'{r:.2g}'):,.0f}"
+    if r < 1e6:
+        return f"{r / 1e3:,.0f} هزار"
+    if r < 1e9:
+        return f"{r / 1e6:,.0f} میلیون"
+    return f"{r / 1e9:,.0f} میلیارد"
+
+
+def _logp_sentence_fa(logp: float) -> str:
+    r = 10 ** logp
+    logp = round(logp, 1) + 0.0
+    head = f"‎logP‎ آن ‎{logp:.1f}‎ است: "
+    if abs(logp) < 0.3:
+        return head + "در روغن و آب تقریباً به یک اندازه راحت است، پس نسبت به اندازه‌اش کاملاً قطبی است."
+    if logp < 0:
+        return head + f"آب را به روغن ترجیح می‌دهد (حدود {_ratio_fa(1 / r)} به 1)، پس آب‌دوست است."
+    kind = "کمی چرب است" if logp < 2 else "نسبتاً چرب (آب‌گریز) است" if logp < 4 else "بسیار چرب (آب‌گریز) است"
+    return head + f"روغن را حدود {_ratio_fa(r)} به 1 به آب ترجیح می‌دهد، پس {kind}."
+
+
+def logp_sentence(logp: float, lang: str = "en") -> str:
     """Absolute chemistry reading of logP (not relative to the average molecule)."""
+    if lang == "fa":
+        return _logp_sentence_fa(logp)
     r = 10 ** logp
     logp = round(logp, 1) + 0.0  # "+ 0.0" turns -0.0 into 0.0 for display
     if abs(logp) < 0.3:
@@ -224,8 +263,14 @@ def logp_sentence(logp: float) -> str:
     return f"Its logP is {logp:.1f}: it prefers oil to water about {_ratio(r)} to 1, so it is very oily (hydrophobic)."
 
 
-def size_sentence(mw: float) -> str | None:
+def size_sentence(mw: float, lang: str = "en") -> str | None:
     """Mention size only when it is notable."""
+    if lang == "fa":
+        if mw >= 350:
+            return f"مولکول بزرگی است (‎{mw:.0f} g/mol‎)، پس آب باید حفرهٔ بزرگی برای جا دادن آن باز کند."
+        if mw <= 80:
+            return f"مولکول کوچکی است (‎{mw:.0f} g/mol‎) و آب به‌آسانی دور آن را می‌گیرد."
+        return None
     if mw >= 350:
         return f"It is a large molecule ({mw:.0f} g/mol), so water must open a big cavity to fit it in."
     if mw <= 80:
@@ -234,8 +279,20 @@ def size_sentence(mw: float) -> str | None:
 
 
 # ----------------------------------------------------------------------------- full analysis
-def analyze(predictor: "Predictor", mol: Chem.Mol) -> dict[str, Any]:
-    """Everything the website shows about one molecule."""
+#: Descriptive terms of the pharmacopoeias (USP/Ph. Eur.): mL of water needed to dissolve 1 g.
+USP_TERMS = [(1, "very_soluble"), (10, "freely_soluble"), (30, "soluble"), (100, "sparingly_soluble"),
+             (1000, "slightly_soluble"), (10000, "very_slightly_soluble"), (float("inf"), "practically_insoluble")]
+
+
+def usp_term(g_per_L: float) -> str:
+    """Pharmacopoeia word for a solubility, e.g. 'sparingly_soluble' (30-100 mL of water per gram)."""
+    parts = 1000 / g_per_L if g_per_L > 0 else float("inf")
+    return next(term for limit, term in USP_TERMS if parts < limit)
+
+
+def analyze(predictor: "Predictor", mol: Chem.Mol, lang: str = "en") -> dict[str, Any]:
+    """Everything the website shows about one molecule (``lang`` = "en" or "fa" for the sentences)."""
+    from .baselines import delaney_one
     from .predict import category
 
     logS = predictor.predict_mol(mol)
@@ -263,14 +320,18 @@ def analyze(predictor: "Predictor", mol: Chem.Mol) -> dict[str, Any]:
 
     # Plain-language explanation.
     groups = describe_groups(mol, weights)
-    sentences = [group_sentence(g) for g in groups[:2] if abs(g["effect"]) >= 0.1]
-    sentences.append(logp_sentence(desc["MolLogP"]))
-    size = size_sentence(mw)
+    sentences = [group_sentence(g, lang) for g in groups[:2] if abs(g["effect"]) >= 0.1]
+    sentences.append(logp_sentence(desc["MolLogP"], lang))
+    size = size_sentence(mw, lang)
     if size:
         sentences.append(size)
 
     hw = dom["half_width"]
     return {
+        "kind": "organic",
+        "measured": predictor.measured(mol),
+        "classic": {"delaney": round(delaney_one(mol), 2)},
+        "usp": usp_term((10 ** logS) * mw),
         "logS": round(logS, 2),
         "interval": [round(logS - hw, 2), round(logS + hw, 2)],
         "coverage": predictor.conformal["coverage"],
