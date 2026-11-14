@@ -48,9 +48,9 @@ def test_suggestions_for_typos():
 
 
 def test_pubchem_used_for_unknown_names(monkeypatch):
-    monkeypatch.setattr(R, "pubchem_smiles", lambda name, timeout=6.0: ("Limonene", "CC1=CCC(CC1)C(=C)C"))
-    r = resolve("limonene")
-    assert r.source == "pubchem" and r.name == "Limonene"
+    monkeypatch.setattr(R, "pubchem_smiles", lambda name, timeout=6.0: ("Squalane", "CC(C)CCCC(C)CCCC(C)CCCCC(C)CCCC(C)CCCC(C)C"))
+    r = resolve("squalane")
+    assert r.source == "pubchem" and r.name == "Squalane"
 
 
 def test_pubchem_parsing(monkeypatch):

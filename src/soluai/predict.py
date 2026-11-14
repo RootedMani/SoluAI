@@ -67,6 +67,30 @@ class Predictor:
         """Morgan fingerprints of the training molecules (computed once)."""
         return [self.featurizer.fingerprint(Chem.MolFromSmiles(s)) for s in self.training_set["smiles"]]
 
+    @cached_property
+    def _measured_index(self) -> tuple[dict[str, int], dict[str, int]]:
+        """Row of each training molecule by SMILES: exact, and with 3D details (stereo) ignored."""
+        exact: dict[str, int] = {}
+        flat: dict[str, int] = {}
+        for i, smi in enumerate(self.training_set["smiles"]):
+            exact.setdefault(smi, i)
+            if any(ch in smi for ch in "@/\\"):
+                smi = Chem.MolToSmiles(Chem.MolFromSmiles(smi), isomericSmiles=False)
+            flat.setdefault(smi, i)
+        return exact, flat
+
+    def measured(self, mol: Chem.Mol) -> dict | None:
+        """The lab-measured logS of this molecule, if it is in the data the model learned from."""
+        exact, flat = self._measured_index
+        i = exact.get(Chem.MolToSmiles(mol))
+        is_exact = i is not None
+        if i is None:
+            i = flat.get(Chem.MolToSmiles(mol, isomericSmiles=False))
+        if i is None:
+            return None
+        ts = self.training_set
+        return {"logS": round(float(ts.at[i, "logS"]), 2), "name": str(ts.at[i, "name"]).strip(), "exact": is_exact}
+
     # -- predictions -------------------------------------------------------------
     def features(self, mol: Chem.Mol) -> np.ndarray:
         """Feature row (1 x n) for a molecule."""

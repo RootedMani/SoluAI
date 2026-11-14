@@ -1,67 +1,68 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-title-fa="مدل چگونه کار می‌کند">
 <head>
 <title>SoluAI · How the model works</title>
+<meta name="description" content="Predict how well a molecule dissolves in water, and see why.">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/css/style.css">
-<script>/* apply the saved (or system) theme before the page paints, to avoid a flash */
-(function(){var t=null;try{t=localStorage.getItem("soluai-theme")}catch(e){}
-if(!t){t=window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}
-document.documentElement.dataset.theme=t})();</script>
+<script src="/static/js/boot.js"></script>
 <script src="/static/js/common.js"></script>
 <script src="/static/vendor/plotly-2.35.2.min.js" defer></script>
 <script src="/static/js/model.js" defer></script>
 </head>
 <body>
 <main class="wrap">
-  <section class="page-title">
-    <span class="eyebrow">Honest evaluation</span>
-    <h1>How the model works</h1>
-    <p class="lead">Every number on this page comes from molecules the model <b>never saw</b> while it was learning. Here you can check how good it really is, and where it fails.</p>
+<section class="page-title">
+    <span class="eyebrow"><span data-l="en">Honest evaluation</span><span data-l="fa">ارزیابی صادقانه</span></span>
+    <h1><span data-l="en">How the model works</span><span data-l="fa">مدل چگونه کار می‌کند</span></h1>
+    <p class="lead"><span data-l="en">Every number in the first part of this page comes from molecules the model <b>never saw</b> while it was learning. Here you can check how good it really is, and where it fails.</span><span data-l="fa">همهٔ عددهای بخش نخست این صفحه از مولکول‌هایی به دست آمده که مدل هنگام یادگیری <b>هرگز ندیده</b> است. این‌جا می‌توانید ببینید مدل واقعاً چقدر خوب است و کجا خطا می‌کند.</span></p>
   </section>
   <div class="grid grid-4" id="kpis"></div>
 
   <div class="card" style="margin-top:20px">
     <div class="card-title" style="flex-wrap:wrap">
-      <h2 style="margin:0">Two kinds of exam</h2>
+      <h2 style="margin:0"><span data-l="en">Two kinds of exam</span><span data-l="fa">دو نوع امتحان</span></h2>
       <div style="display:flex;gap:10px;flex-wrap:wrap">
-        <div class="segmented" id="ds"><button class="active" data-v="aqsoldb">AqSolDB</button><button data-v="esol">ESOL</button></div>
-        <div class="segmented" id="sp"><button class="active" data-v="random">Random split</button><button data-v="scaffold">Scaffold split</button></div>
+        <div class="segmented ltr" id="ds"><button class="active" data-v="aqsoldb">AqSolDB</button><button data-v="esol">ESOL</button></div>
+        <div class="segmented" id="sp"><button class="active" data-v="random"><span data-l="en">Random split</span><span data-l="fa">تقسیم تصادفی</span></button><button data-v="scaffold"><span data-l="en">Scaffold split</span><span data-l="fa">تقسیم اسکلتی</span></button></div>
       </div>
     </div>
     <div class="grid grid-2">
-      <p class="muted"><b>Random split:</b> shuffle all molecules and hide 20% for the test. Test molecules usually have a close "cousin" in the training set, so this is the easier exam.</p>
-      <p class="muted"><b>Scaffold split:</b> group molecules by their ring skeleton and hide whole groups. The test molecules have skeletons the model has never seen, which is closer to predicting a brand-new drug.</p>
+      <p class="muted"><span data-l="en"><b>Random split:</b> shuffle all molecules and hide 20% for the test. Test molecules usually have a close "cousin" in the training set, so this is the easier exam.</span><span data-l="fa"><b>تقسیم تصادفی:</b> همهٔ مولکول‌ها را بُر می‌زنیم و 20% را برای آزمون پنهان می‌کنیم. مولکول‌های آزمون معمولاً یک «خویشاوند» نزدیک در داده‌های آموزشی دارند؛ پس این امتحان آسان‌تر است.</span></p>
+      <p class="muted"><span data-l="en"><b>Scaffold split:</b> group molecules by their ring skeleton and hide whole groups. The test molecules have skeletons the model has never seen, which is closer to predicting a brand-new drug.</span><span data-l="fa"><b>تقسیم اسکلتی:</b> مولکول‌ها را بر پایهٔ اسکلت حلقه‌ای‌شان گروه‌بندی و گروه‌های کامل را پنهان می‌کنیم. مولکول‌های آزمون اسکلت‌هایی دارند که مدل هرگز ندیده است؛ این به پیش‌بینی یک داروی کاملاً تازه نزدیک‌تر است.</span></p>
     </div>
     <div class="grid grid-2" style="margin-top:8px">
-      <div><div class="card-title"><h3>Predicted vs measured</h3><select id="parity-model" class="chip"></select></div><div id="p-parity" class="plot" style="min-height:420px"></div></div>
-      <div><h3>Model comparison</h3><div class="table-wrap" id="table"></div>
-        <p class="small muted" style="margin-top:10px">CV = 5-fold cross-validation on the training part, used to choose settings. Test = scored once on the hidden 20%. The highlighted row has the best CV score, which is how we pick a model (never by the test score).</p></div>
+      <div><div class="card-title"><h3><span data-l="en">Predicted vs measured</span><span data-l="fa">پیش‌بینی در برابر اندازه‌گیری</span></h3><select id="parity-model" class="chip ltr"></select></div><div id="p-parity" class="plot" style="min-height:420px"></div></div>
+      <div><h3><span data-l="en">Model comparison</span><span data-l="fa">مقایسهٔ مدل‌ها</span></h3><div class="table-wrap ltr" id="table"></div>
+        <p class="small muted" style="margin-top:10px"><span data-l="en">CV = 5-fold cross-validation on the training part, used to choose settings. Test = scored once on the hidden 20%. The highlighted row has the best CV score, which is how we pick a model (never by the test score).</span><span data-l="fa">CV = اعتبارسنجی متقابل 5‌بخشی روی دادهٔ آموزشی که برای انتخاب تنظیم‌ها به کار می‌رود. آزمون = فقط یک بار روی 20% پنهان. ردیف پررنگ بهترین امتیاز CV را دارد؛ مدل را این‌گونه انتخاب می‌کنیم (هرگز با امتیاز آزمون).</span></p></div>
     </div>
   </div>
 
   <div class="grid grid-2" style="margin-top:20px">
-    <div class="card"><h2>Human vs machine</h2><div id="p-human" class="plot"></div>
-      <p class="small muted">In 2004 John Delaney wrote a 4-term formula by hand: logS = 0.16 − 0.63·logP − 0.0062·MW + 0.066·RB − 0.74·AP. It is surprisingly good. The machine-learning models use more information and make <b id="gain">…</b> smaller errors on AqSolDB.</p></div>
-    <div class="card"><h2>What the model looks at</h2><div id="p-importance" class="plot" style="min-height:440px"></div>
-      <p class="small muted">Average size of each feature's push (mean |SHAP|) over all training molecules. "Fragment" features are Morgan fingerprint bits; the SMILES shows the small piece of molecule each bit stands for.</p></div>
+    <div class="card"><h2><span data-l="en">Human vs machine</span><span data-l="fa">انسان در برابر ماشین</span></h2><div id="p-human" class="plot"></div>
+      <p class="small muted"><span data-l="en">In 2004 John Delaney wrote a 4-term formula by hand:</span><span data-l="fa">در سال 2004 جان دلانی فرمولی چهارجمله‌ای با دست نوشت:</span> <span class="ltr">logS = 0.16 − 0.63·logP − 0.0062·MW + 0.066·RB − 0.74·AP</span>. <span data-l="en">It is surprisingly good. The machine-learning models use more information and make</span><span data-l="fa">به‌طرز شگفت‌آوری خوب است. مدل‌های یادگیری ماشین از اطلاعات بیشتری استفاده می‌کنند و خطایشان روی AqSolDB</span> <b id="gain" class="ltr">…</b> <span data-l="en">smaller errors on AqSolDB.</span><span data-l="fa">کمتر است.</span></p></div>
+    <div class="card"><h2><span data-l="en">What the model looks at</span><span data-l="fa">مدل به چه چیزی نگاه می‌کند</span></h2><div id="p-importance" class="plot" style="min-height:440px"></div>
+      <p class="small muted"><span data-l="en">Average size of each feature's push (mean |SHAP|) over all training molecules. "Fragment" features are Morgan fingerprint bits; the SMILES shows the small piece of molecule each bit stands for.</span><span data-l="fa">میانگین اندازهٔ اثر هر ویژگی (میانگین |SHAP|) روی همهٔ مولکول‌های آموزشی. ویژگی‌های «Fragment» بیت‌های اثرانگشت مورگان‌اند؛ SMILES کنار هر کدام، تکهٔ کوچکی از مولکول را نشان می‌دهد که آن بیت نمایندهٔ آن است.</span></p></div>
   </div>
 
   <div class="card" style="margin-top:20px">
-    <h2>Does the model think like a chemist?</h2>
-    <p class="muted">Each dot is one molecule. The y-axis shows how much that feature pushed its prediction. If the model learned real chemistry, a high logP should push solubility down and polar surface or H-bond donors should push it up.</p>
+    <h2><span data-l="en">Does the model think like a chemist?</span><span data-l="fa">آیا مدل مثل یک شیمی‌دان فکر می‌کند؟</span></h2>
+    <p class="muted"><span data-l="en">Each dot is one molecule. The y-axis shows how much that feature pushed its prediction. If the model learned real chemistry, a high logP should push solubility down and polar surface or H-bond donors should push it up.</span><span data-l="fa">هر نقطه یک مولکول است. محور عمودی نشان می‌دهد آن ویژگی چقدر پیش‌بینی را جابه‌جا کرده است. اگر مدل شیمی واقعی یاد گرفته باشد، logP بالا باید انحلال‌پذیری را پایین و سطح قطبی یا دهنده‌های پیوند هیدروژنی باید آن را بالا ببرند.</span></p>
     <div class="grid grid-4" id="dep"></div>
   </div>
 
   <div class="grid grid-2" style="margin-top:20px">
-    <div class="card"><h2>How sure is it?</h2><div id="unc"></div></div>
-    <div class="card"><h2>Unfamiliar molecules are harder</h2><div id="p-sim" class="plot"></div>
-      <p class="small muted">Test error grouped by how similar each test molecule is to its closest training molecule (scaffold split, LightGBM).</p></div>
+    <div class="card"><h2><span data-l="en">How sure is it?</span><span data-l="fa">چقدر مطمئن است؟</span></h2><div id="unc"></div></div>
+    <div class="card"><h2><span data-l="en">Unfamiliar molecules are harder</span><span data-l="fa">مولکول‌های ناآشنا سخت‌ترند</span></h2><div id="p-sim" class="plot"></div>
+      <p class="small muted"><span data-l="en">Test error grouped by how similar each test molecule is to its closest training molecule (scaffold split, LightGBM).</span><span data-l="fa">خطای آزمون بر پایهٔ شباهت هر مولکول آزمون به نزدیک‌ترین مولکول آموزشی (تقسیم اسکلتی، LightGBM).</span></p></div>
+  </div>
+
+  <div class="card" style="margin-top:20px">
+    <div class="card-title"><h2 style="margin:0"><span data-l="en">Kitchen test</span><span data-l="fa">آزمون آشپزخانه</span></h2><span class="small muted"><span data-l="en">things you can find at home</span><span data-l="fa">چیزهایی که در خانه پیدا می‌شوند</span></span></div>
+    <p class="muted"><span data-l="en">Does the model agree with everyday experience? Sugar dissolves, mothballs do not. Salts are answered by the solubility rules instead of the model.</span><span data-l="fa">آیا مدل با تجربهٔ روزمره هم‌خوانی دارد؟ شکر حل می‌شود، نفتالین نه. نمک‌ها به‌جای مدل، با قواعد انحلال‌پذیری پاسخ داده می‌شوند.</span></p>
+    <div id="household"></div>
   </div>
 </main>
 </body>

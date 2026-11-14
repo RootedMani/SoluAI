@@ -2,10 +2,11 @@
 
 **Before class:**
 * Open the website **2 minutes early**: the free server sleeps and needs ~30–60 s to wake up.
-* Open these tabs in order: Predict, Compare, How the model works, Chemistry corner.
+* Open these tabs in order: Predict, Compare, Trends, Salts, Model, Chemistry. Keep Quiz ready for the end.
+* For a Persian-speaking audience press the **فارسی** button once; every page switches.
 * Use **light mode** on a projector (it has better contrast), and zoom the browser to 125% if the room is big.
-* Backup plan: if the internet fails, run it on your laptop with `uvicorn web.main:app` and
-  open <http://127.0.0.1:8000>. Every demo below works offline (built-in list + SMILES).
+* Backup plan: if the internet fails, run it on your laptop with `python run.py`.
+  Every demo below works offline (225 built-in names, SMILES, drawing, salts).
 
 ---
 
@@ -121,3 +122,26 @@ explaining *why* was a main goal of this project.
 
 **Q: Does temperature matter?**
 Yes, a lot, but all the data are at about 25 °C, so the model can't predict other temperatures.
+
+---
+
+## Extra demos (v1.1): pick one or two if you have time
+
+| Demo | Where | What to say |
+|---|---|---|
+| **Type `NaCl`, then `AgCl`** | Predict | "Salts are not molecules, so the AI refuses to guess. SoluAI switches to the solubility rules from our textbook, and tells you it did." |
+| **AgNO₃ + NaCl** | Salts → mixing lab | "The ions swap partners. AgCl is insoluble by rule 3, so it falls out. Here is the net ionic equation." Then NaCl + KNO₃: nothing happens. |
+| **Alcohols vs alkanes** | Trends | "Each extra CH₂ makes it about 4 times less soluble: a straight line on a log scale. Lines are the model, diamonds are the lab." |
+| **Toluene → Suggest changes** | Predict | "This is what drug designers do. Swapping one ring CH for N is predicted to help the most." |
+| **Draw** benzene, add –OH | Predict → Draw | "No SMILES needed." |
+| **Three answers** | Predict (any result) | "Lab value, our AI, and a formula a chemist wrote by hand in 2004." |
+| **Quiz with the class** | Quiz | Let the class vote by hand on 3 questions. "You vs the AI." |
+
+**Likely new questions**
+
+* *"Is the salt part also AI?"* No. It is a rule engine with 8 rules, checked against 50 measured
+  values. Being clear about where the AI stops is part of the project.
+* *"Why does the quiz AI score so well?"* It saw those molecules in training. On molecules it has
+  never seen, its typical error is about 1 log unit (see the Model page).
+* *"Can I trust 'make it more soluble'?"* As ideas only. The model knows nothing about whether the
+  new molecule can be made or still works as a drug.

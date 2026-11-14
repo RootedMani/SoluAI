@@ -1,25 +1,30 @@
-/* Predict page: search, molecule picker and the detailed result view. */
+/* Predict page: search, molecule picker, drawing editor and the detailed result view. */
+
+let CURRENT = null;   // the last result shown (used by the editor and the "more soluble" ideas)
 
 document.addEventListener("DOMContentLoaded", async () => {
   document.getElementById("search-icon").innerHTML = ICONS.search;
+  document.getElementById("draw-icon").innerHTML = ICONS.pencil;
   const form = document.getElementById("search-form");
   const input = document.getElementById("query");
   form.addEventListener("submit", (e) => { e.preventDefault(); run(input.value); });
+  setupEditor();
 
-  // Molecule picker (offline list), grouped by category.
+  // Molecule picker (offline list), grouped by category, plus autocomplete for every known name.
   try {
-    const { categories } = await api("/api/molecules");
+    const { categories, names: all } = await api("/api/molecules");
     const tabs = document.getElementById("picker-tabs");
     const chips = document.getElementById("chips");
     const names = Object.keys(categories);
     const show = (cat) => {
       tabs.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.dataset.cat === cat));
-      chips.innerHTML = categories[cat].map((m) => `<button class="chip" data-name="${esc(m.name)}">${esc(m.name)}</button>`).join("");
+      chips.innerHTML = categories[cat].map((m) => `<button class="chip" data-name="${esc(m.name)}">${esc(m.label)}</button>`).join("");
     };
     tabs.innerHTML = names.map((c) => `<button class="tab" data-cat="${esc(c)}">${esc(c)}</button>`).join("");
     tabs.onclick = (e) => e.target.dataset.cat && show(e.target.dataset.cat);
-    chips.onclick = (e) => { if (e.target.dataset.name) { input.value = e.target.dataset.name; run(e.target.dataset.name); } };
+    chips.onclick = (e) => { if (e.target.dataset.name) { input.value = e.target.textContent; run(e.target.dataset.name); } };
     show(names[0]);
+    document.getElementById("names").innerHTML = all.map((n) => `<option value="${esc(n)}">`).join("");
   } catch { /* picker is optional */ }
 
   const q = new URLSearchParams(location.search).get("q");
@@ -33,89 +38,227 @@ async function run(query) {
   out.innerHTML = loadingBox();
   try {
     const r = await api("/api/predict", { query });
-    out.innerHTML = renderResult(r);
-    wireToggle(out, r);
+    CURRENT = r;
+    if (r.kind === "ionic") {
+      out.innerHTML = `<div style="margin-top:28px">${printHeader()}${ionicCard(r, { link: true })}</div>`;
+    } else {
+      out.innerHTML = renderResult(r);
+      wire(out, r);
+    }
     history.replaceState(null, "", `?q=${encodeURIComponent(query)}`);
-    document.querySelectorAll(".chip").forEach((c) => c.classList.toggle("active", c.dataset.name === r.name));
+    document.querySelectorAll(".chip").forEach((c) => c.classList.toggle("active", c.dataset.name === (r.name_en || r.name)));
   } catch (err) {
+    CURRENT = null;
     out.innerHTML = `<div style="margin-top:24px;max-width:760px">${errorBox(err)}</div>`;
   } finally {
     btn.disabled = false;
   }
 }
 
+/* Only visible on paper / in the saved PDF. */
+function printHeader() {
+  const today = new Date().toLocaleDateString(FA ? "fa-IR" : "en-GB", { year: "numeric", month: "long", day: "numeric" });
+  return `<div class="print-only" style="margin-bottom:14px">
+    <div class="row spread"><b style="font-size:1.3rem">SoluAI · ${T("solubility report", "گزارش انحلال‌پذیری")}</b><span>${esc(today)}</span></div>
+    <p class="small muted" style="margin:4px 0 0">${T("Machine-learning estimate of water solubility at about 25 °C. Not a lab measurement.",
+      "برآورد یادگیری ماشین از انحلال‌پذیری در آب در حدود 25 درجهٔ سلسیوس؛ اندازه‌گیری آزمایشگاهی نیست.")}</p></div>`;
+}
+
+const WIDE_FA = { "Overall size": "اندازهٔ کلی", "Compared with the average molecule": "در مقایسه با مولکول میانگین",
+  "Fragments not present": "قطعه‌هایی که وجود ندارند", "Other": "سایر" };
+
+/* Measured value, SoluAI and the classic hand-made formula on one scale. */
+function threeAnswers(r) {
+  const m = r.measured, c = r.classic.delaney;
+  const row = (who, sub, v) => `<div class="tri-row"><span class="who">${who}<small>${sub}</small></span>
+    <span class="tri-track"><span class="tri-dot" style="left:${pct(v)}%"></span></span><span class="val ltr">${num(v)}</span></div>`;
+  let verdict;
+  if (m) {
+    const ea = Math.abs(r.logS - m.logS), ec = Math.abs(c - m.logS);
+    const who = ea <= ec ? T("SoluAI is closer", "SoluAI نزدیک‌تر است") : T("the classic formula is closer here", "این‌جا فرمول کلاسیک نزدیک‌تر است");
+    verdict = T(`Compared with the lab value, SoluAI is off by ${ea.toFixed(2)} and the classic formula by ${ec.toFixed(2)} log units: ${who}. `,
+      `در مقایسه با مقدار آزمایشگاهی، خطای SoluAI برابر ${ea.toFixed(2)} و خطای فرمول کلاسیک ${ec.toFixed(2)} واحد لگاریتمی است: ${who}. `) +
+      T("Honest note: this molecule was in the training data, so the model has seen its answer before.",
+        "نکتهٔ صادقانه: این مولکول در داده‌های آموزشی بوده، پس مدل پاسخ آن را قبلاً دیده است.") +
+      (m.exact ? "" : T(" (The lab value is for the same molecule with its 3D shape ignored.)", " (مقدار آزمایشگاهی برای همین مولکول بدون در نظر گرفتن شکل سه‌بعدی است.)"));
+  } else {
+    const d = Math.abs(r.logS - c);
+    verdict = T(`No lab value for this molecule in our data. SoluAI and the classic formula differ by ${d.toFixed(2)} log units${d >= 1 ? " - a big gap, so treat the number with care." : "."}`,
+      `برای این مولکول مقدار آزمایشگاهی در داده‌های ما نیست. اختلاف SoluAI و فرمول کلاسیک ${d.toFixed(2)} واحد لگاریتمی است${d >= 1 ? "؛ اختلاف بزرگی است، پس با احتیاط به عدد نگاه کنید." : "."}`);
+  }
+  return `<div class="card fade-in" style="margin-top:20px">
+    <div class="card-title"><h3>${T("Three answers to the same question", "سه پاسخ به یک پرسش")}</h3><span class="small muted">logS</span></div>
+    <div class="tri">
+      ${m ? row(T("Measured in the lab", "اندازه‌گیری آزمایشگاهی"), esc(prettyName(m.name)), m.logS) : ""}
+      ${row("SoluAI", T("machine learning, 2026", "یادگیری ماشین"), r.logS)}
+      ${row(T("Classic formula", "فرمول کلاسیک"), T("Delaney's equation, 2004", "معادلهٔ دلانی، 2004"), c)}
+    </div>
+    <p class="small muted" style="margin:14px 0 0">${verdict}</p>
+  </div>`;
+}
+
 function renderResult(r) {
-  const source = { list: "from the built-in list", smiles: "from SMILES", pubchem: "found on PubChem" }[r.source];
+  const source = { list: T("from the built-in list", "از فهرست داخلی"), smiles: T("from SMILES", "از SMILES"), pubchem: T("found on PubChem", "یافت‌شده در PubChem") }[r.source];
   const wide = Object.entries(r.molecule_wide).map(([k, v]) =>
-    `<li><b>${esc(k)}</b>: ${v >= 0 ? "+" : ""}${v.toFixed(2)}</li>`).join("");
+    `<li><b>${esc(FA ? WIDE_FA[k] || k : k)}</b>: <span class="ltr">${signed(v)}</span></li>`).join("");
   const neighbours = r.domain.neighbours.map((n) => `
-    <div class="neighbour"><span class="n-name" title="${esc(n.smiles)}">${esc(prettyName(n.name))}</span>
-    <span class="muted">${Math.round(n.similarity * 100)}% similar · logS <b>${n.logS.toFixed(2)}</b></span></div>`).join("");
+    <div class="neighbour"><span class="n-name ltr" title="${esc(n.smiles)}">${esc(prettyName(n.name))}</span>
+    <span class="muted">${Math.round(n.similarity * 100)}% ${T("similar", "شباهت")} · logS <b class="ltr">${num(n.logS)}</b></span></div>`).join("");
   return `
+  ${printHeader()}
   <div class="result fade-in">
     <div class="card">
       <div class="card-title">
         <div><p class="mol-name">${esc(capitalize(r.name))}</p>
           <div class="mol-meta">${formula(r.formula)} · ${r.mol_weight.toFixed(1)} g/mol · ${esc(source)}</div></div>
         <div class="segmented" role="tablist">
-          <button class="active" data-view="explained">Why</button><button data-view="plain">Structure</button>
+          <button class="active" data-view="explained">${T("Why", "چرا")}</button><button data-view="plain">${T("Structure", "ساختار")}</button>
         </div>
       </div>
       <div class="mol-paper" id="mol-svg">${r.svg_explained}</div>
       <div class="legend" style="margin-top:12px">
-        <span><i style="background:var(--up)"></i>raises solubility</span>
-        <span><i style="background:var(--down)"></i>lowers solubility</span>
+        <span><i style="background:var(--up)"></i>${T("raises solubility", "انحلال‌پذیری را بالا می‌برد")}</span>
+        <span><i style="background:var(--down)"></i>${T("lowers solubility", "انحلال‌پذیری را پایین می‌آورد")}</span>
         <span class="mono small">${esc(r.smiles)}</span>
+      </div>
+      <div class="row no-print" style="margin-top:14px">
+        <button class="btn ghost small" id="edit-btn">${ICONS.pencil} ${T("Edit this molecule", "ویرایش همین مولکول")}</button>
+        <button class="btn ghost small" id="print-btn">${T("Save as PDF / print", "ذخیره به‌صورت PDF / چاپ")}</button>
       </div>
     </div>
 
     <div class="card">
-      <div class="kicker">Predicted solubility in water (25 °C)</div>
+      <div class="kicker">${T("Predicted solubility in water (25 °C)", "انحلال‌پذیری پیش‌بینی‌شده در آب (25°C)")}</div>
       <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:8px">
-        <div class="big-number">${r.logS.toFixed(2)}<small>log mol/L</small></div>
+        <div class="big-number">${num(r.logS)}<small>log mol/L</small></div>
         ${badge(r.category)}
       </div>
-      <div class="stat-row">
-        <div class="stat"><div class="label">In grams</div><div class="value">${fmtConc(r.g_per_L)}</div></div>
-        <div class="stat"><div class="label">${Math.round(r.coverage * 100)}% range</div><div class="value">${r.interval[0].toFixed(1)} to ${r.interval[1].toFixed(1)}</div></div>
-        <div class="stat"><div class="label">Moles per litre</div><div class="value">${sci(Math.pow(10, r.logS))}</div></div>
+      <div class="stat-row four">
+        <div class="stat"><div class="label">${T("In grams", "به گرم")}</div><div class="value ltr">${fmtConc(r.g_per_L)}</div></div>
+        <div class="stat"><div class="label">${T("In a glass of water", "در یک لیوان آب")}</div><div class="value ltr">${glassAmount(r.g_per_L)}</div></div>
+        <div class="stat"><div class="label">${T(`${Math.round(r.coverage * 100)}% range`, `بازهٔ ${Math.round(r.coverage * 100)}%`)}</div><div class="value ltr">${num(r.interval[0], 1)} … ${num(r.interval[1], 1)}</div></div>
+        <div class="stat"><div class="label">${T("Moles per litre", "مول بر لیتر")}</div><div class="value ltr">${sci(Math.pow(10, r.logS))}</div></div>
       </div>
+      <p class="note" style="margin:16px 0 0">${waterNeeded(r.g_per_L)} ${T("Pharmacists would call it", "در داروسازی به آن می‌گویند")}: <b>${uspLabel(r.usp)}</b>.</p>
       ${scaleBar(r)}
       <div style="margin-top:20px">${domainBox(r)}</div>
       <div class="props">${propBoxes(r.descriptors)}</div>
     </div>
   </div>
 
+  ${threeAnswers(r)}
+
   <div class="grid grid-2 fade-in" style="margin-top:20px">
     <div class="card">
-      <h3>Why? In plain words</h3>
+      <h3>${T("Why? In plain words", "چرا؟ به زبان ساده")}</h3>
       <div class="why"><ul>${r.explanation.map((s) => `<li>${esc(s)}</li>`).join("")}</ul></div>
-      ${wide ? `<p class="small muted" style="margin-top:14px">Whole-molecule effects not drawn on atoms (log units):</p><ul class="small muted">${wide}</ul>` : ""}
+      ${wide ? `<p class="small muted" style="margin-top:14px">${T("Whole-molecule effects not drawn on atoms (log units):", "اثرهای کلِ مولکول که روی اتم‌ها رسم نشده‌اند (واحد لگاریتمی):")}</p><ul class="small muted">${wide}</ul>` : ""}
     </div>
     <div class="card">
-      <div class="card-title"><h3>What pushed the prediction</h3><span class="small muted">SHAP, log units</span></div>
+      <div class="card-title"><h3>${T("What pushed the prediction", "چه چیزی پیش‌بینی را جابه‌جا کرد")}</h3><span class="small muted">${T("SHAP, log units", "SHAP، واحد لگاریتمی")}</span></div>
       ${shapBars(r.contributions)}
-      <p class="small muted" style="margin-top:14px">Starts from the average molecule (${r.base_value.toFixed(2)}); blue bars push solubility up, red bars push it down. They add up to ${r.logS.toFixed(2)}.</p>
+      <p class="small muted" style="margin-top:14px">${T(`Starts from the average molecule (${num(r.base_value)}); blue bars push solubility up, red bars push it down. They add up to ${num(r.logS)}.`,
+        `از مولکول میانگین (‎${num(r.base_value)}‎) شروع می‌شود؛ میله‌های آبی انحلال‌پذیری را بالا و میله‌های قرمز پایین می‌برند. جمع آن‌ها ‎${num(r.logS)}‎ می‌شود.`)}</p>
     </div>
   </div>
 
+  <div class="card fade-in no-print" style="margin-top:20px" id="ideas-card">
+    <div class="card-title"><h3>${T("Make it more soluble", "چطور محلول‌تر شود؟")}</h3><span class="small muted">${T("what drug designers do every day", "کاری که طراحان دارو هر روز انجام می‌دهند")}</span></div>
+    <p class="muted" style="margin-bottom:14px">${T("SoluAI can try small changes to this molecule (add an –OH, swap a ring CH for N, shorten a chain…) and rank them by predicted solubility.",
+      "SoluAI می‌تواند تغییرهای کوچکی را روی این مولکول امتحان کند (افزودن ‎–OH‎، جایگزینی ‎CH‎ حلقه با ‎N‎، کوتاه کردن زنجیر…) و آن‌ها را بر پایهٔ انحلال‌پذیری پیش‌بینی‌شده مرتب کند.")}</p>
+    <button class="btn" id="ideas-btn">${T("Suggest changes", "پیشنهاد تغییر")}</button>
+    <div id="ideas"></div>
+  </div>
+
   <div class="card fade-in" style="margin-top:20px">
-    <div class="card-title"><h3>Closest molecules the model learned from</h3><span class="small muted">measured values</span></div>
+    <div class="card-title"><h3>${T("Closest molecules the model learned from", "نزدیک‌ترین مولکول‌هایی که مدل از آن‌ها یاد گرفته")}</h3><span class="small muted">${T("measured values", "مقدارهای اندازه‌گیری‌شده")}</span></div>
     <div class="neighbours">${neighbours}</div>
   </div>`;
 }
 
 function propBoxes(d) {
-  const items = [["logP", d.MolLogP.toFixed(1)], ["Polar surface", `${d.TPSA.toFixed(0)} Å²`],
-    ["H-bond donors", d.NumHDonors], ["H-bond acceptors", d.NumHAcceptors],
-    ["Rotatable bonds", d.NumRotatableBonds], ["Rings", d.RingCount],
-    ["Aromatic rings", d.NumAromaticRings], ["Heavy atoms", d.HeavyAtomCount]];
-  return items.map(([k, v]) => `<div><div class="label">${k}</div><div class="value">${v}</div></div>`).join("");
+  const items = [["logP", d.MolLogP.toFixed(1)], [T("Polar surface", "سطح قطبی"), `${d.TPSA.toFixed(0)} Å²`],
+    [T("H-bond donors", "دهندهٔ پیوند H"), d.NumHDonors], [T("H-bond acceptors", "پذیرندهٔ پیوند H"), d.NumHAcceptors],
+    [T("Rotatable bonds", "پیوند چرخش‌پذیر"), d.NumRotatableBonds], [T("Rings", "حلقه"), d.RingCount],
+    [T("Aromatic rings", "حلقهٔ آروماتیک"), d.NumAromaticRings], [T("Heavy atoms", "اتم سنگین"), d.HeavyAtomCount]];
+  return items.map(([k, v]) => `<div><div class="label">${k}</div><div class="value ltr">${v}</div></div>`).join("");
 }
 
-function wireToggle(root, r) {
+function wire(root, r) {
   root.querySelectorAll(".segmented button").forEach((b) => b.addEventListener("click", () => {
     root.querySelectorAll(".segmented button").forEach((x) => x.classList.toggle("active", x === b));
     root.querySelector("#mol-svg").innerHTML = b.dataset.view === "plain" ? r.svg : r.svg_explained;
   }));
+  root.querySelector("#print-btn").onclick = () => window.print();
+  root.querySelector("#edit-btn").onclick = () => openEditor(r.smiles);
+  root.querySelector("#ideas-btn").onclick = () => loadIdeas(r);
+}
+
+/* ------------------------------------------------------------------ "make it more soluble" */
+async function loadIdeas(r) {
+  const box = document.getElementById("ideas");
+  document.getElementById("ideas-btn").remove();
+  box.innerHTML = loadingBox(T("Trying small changes…", "در حال امتحان تغییرهای کوچک…"));
+  try {
+    const s = await api("/api/suggest", { query: r.smiles });
+    if (!s.ideas.length) {
+      box.innerHTML = `<p class="note">${T("None of the simple changes I know makes this molecule clearly more soluble - it is already very polar, or it has no place for these edits.",
+        "هیچ‌کدام از تغییرهای ساده‌ای که بلدم این مولکول را به‌روشنی محلول‌تر نمی‌کند؛ یا همین حالا بسیار قطبی است یا جایی برای این تغییرها ندارد.")}</p>`;
+      return;
+    }
+    box.innerHTML = `<div class="ideas">${s.ideas.map((i) => `
+      <button class="idea" data-smiles="${esc(i.smiles)}" title="${esc(i.smiles)}">
+        <div class="mol-paper">${i.svg}</div>
+        <b>${esc(i.label)}</b>
+        <span class="delta-up ltr">${signed(i.delta)} logS</span> <span class="muted small">· ${T(`about ${i.fold}× more soluble`, `حدود ${i.fold} برابر محلول‌تر`)}</span>
+        <span class="small muted" style="display:block;margin-top:4px">${esc(i.why)}</span>
+      </button>`).join("")}</div>
+      <p class="small muted" style="margin:14px 0 0">${T(`Tried ${s.tried} variants; showing the best of each kind. Click one to see its full prediction. These are ideas from a model, not a recipe: a real chemist would also check that the molecule still does its job and can actually be made.`,
+        `${s.tried} حالت امتحان شد و بهترینِ هر نوع نشان داده شده است. برای دیدن پیش‌بینی کامل روی هر کدام کلیک کنید. این‌ها ایده‌های یک مدل‌اند، نه دستور ساخت: شیمی‌دان واقعی بررسی می‌کند که مولکول همچنان کار خودش را انجام بدهد و اصلاً قابل ساخت باشد.`)}</p>`;
+    box.querySelectorAll(".idea").forEach((b) => { b.onclick = () => { document.getElementById("query").value = b.dataset.smiles; run(b.dataset.smiles); window.scrollTo({ top: 0, behavior: "smooth" }); }; });
+  } catch (err) {
+    box.innerHTML = errorBox(err);
+  }
+}
+
+/* ------------------------------------------------------------------ drawing editor (JSME, loaded on first use) */
+let EDITOR = null, editorLoading = false, pendingSmiles = null;
+
+function setupEditor() {
+  const modal = document.getElementById("draw-modal");
+  document.getElementById("draw-btn").onclick = () => openEditor(CURRENT && CURRENT.kind === "organic" ? CURRENT.smiles : "");
+  document.getElementById("draw-cancel").onclick = () => modal.classList.remove("open");
+  modal.addEventListener("click", (e) => { if (e.target === modal) modal.classList.remove("open"); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") modal.classList.remove("open"); });
+  document.getElementById("draw-use").onclick = () => {
+    const smi = EDITOR ? EDITOR.smiles() : "";
+    if (!smi) { document.getElementById("draw-smiles").textContent = T("Draw something first.", "اول چیزی رسم کنید."); return; }
+    modal.classList.remove("open");
+    document.getElementById("query").value = smi;
+    run(smi);
+  };
+}
+
+function openEditor(smiles) {
+  document.getElementById("draw-modal").classList.add("open");
+  pendingSmiles = smiles || "";
+  if (EDITOR) { loadIntoEditor(); return; }
+  if (editorLoading) return;
+  editorLoading = true;
+  document.getElementById("jsme-box").innerHTML = loadingBox(T("Loading the editor…", "در حال بارگذاری ویرایشگر…"));
+  window.jsmeOnLoad = () => {
+    document.getElementById("jsme-box").innerHTML = "";
+    EDITOR = new JSApplet.JSME("jsme-box", "100%", "380px", { options: "newlook,nohydrogens,nopaste" });
+    EDITOR.setCallBack("AfterStructureModified", () => { document.getElementById("draw-smiles").textContent = EDITOR.smiles(); });
+    loadIntoEditor();
+  };
+  const s = document.createElement("script");
+  s.src = "/static/vendor/jsme/jsme.nocache.js";
+  s.onerror = () => { document.getElementById("jsme-box").innerHTML = errorBox({ message: T("The drawing editor could not be loaded.", "ویرایشگر رسم بارگذاری نشد.") }); editorLoading = false; };
+  document.head.appendChild(s);
+}
+
+function loadIntoEditor() {
+  if (pendingSmiles) EDITOR.readGenericMolecularInput(pendingSmiles); else EDITOR.reset();
+  document.getElementById("draw-smiles").textContent = pendingSmiles;
 }

@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en" data-title-fa="نمک‌ها و قواعد انحلال‌پذیری">
+<head>
+<title>SoluAI · Salts and solubility rules</title>
+<meta name="description" content="Predict how well a molecule dissolves in water, and see why.">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/static/css/style.css">
+<script src="/static/js/boot.js"></script>
+<script src="/static/js/common.js"></script>
+<script src="/static/js/salts.js" defer></script>
+</head>
+<body>
+<main class="wrap">
+<section class="page-title">
+    <span class="eyebrow"><span data-l="en">Ionic compounds</span><span data-l="fa">ترکیب‌های یونی</span></span>
+    <h1><span data-l="en">Salts: the solubility rules</span><span data-l="fa">نمک‌ها: قواعد انحلال‌پذیری</span></h1>
+    <p class="lead"><span data-l="en">Salts dissolve by splitting into ions, which the AI model was never trained on. So here SoluAI uses the solubility rules from your chemistry textbook, and checks them against lab measurements.</span><span data-l="fa">نمک‌ها با تفکیک به یون‌ها حل می‌شوند؛ چیزی که مدل هوش مصنوعی هرگز برای آن آموزش ندیده است. پس این‌جا SoluAI از قواعد انحلال‌پذیری کتاب شیمی استفاده می‌کند و آن‌ها را با اندازه‌گیری‌های آزمایشگاهی می‌سنجد.</span></p>
+    <form class="search" id="salt-form" autocomplete="off" style="max-width:620px">
+      <input id="salt-q" dir="auto" placeholder="e.g. AgCl, Ca(OH)2, silver nitrate, baking soda" data-ph-fa="مثلاً AgCl، Ca(OH)2، نقره نیترات، جوش شیرین" maxlength="300" spellcheck="false">
+      <button class="btn" type="submit"><span data-l="en">Look up</span><span data-l="fa">جست‌وجو</span></button>
+    </form>
+  </section>
+  <div class="grid salts-top" style="margin-top:16px;align-items:start">
+    <div class="card">
+      <div class="card-title"><h3><span data-l="en">Solubility table</span><span data-l="fa">جدول انحلال‌پذیری</span></h3><span class="small muted"><span data-l="en">click a cell</span><span data-l="fa">روی یک خانه کلیک کنید</span></span></div>
+      <div class="table-wrap" id="table"></div>
+      <div class="legend" id="key" style="margin-top:14px"></div>
+      <p class="small muted" style="margin:12px 0 0"><span data-l="en">Soluble: more than about 1 g dissolves in 100 mL of water. Slightly soluble: 0.1 to 1 g. Insoluble: less than 0.1 g.</span><span data-l="fa">محلول: بیش از حدود 1 گرم در 100 میلی‌لیتر آب حل می‌شود. کم‌محلول: 0.1 تا 1 گرم. نامحلول: کمتر از 0.1 گرم.</span></p>
+    </div>
+    <div id="detail"></div>
+  </div>
+  <div style="margin-top:20px">
+    <div class="card"><h3><span data-l="en">The rules, in order</span><span data-l="fa">قاعده‌ها به ترتیب</span></h3><ol class="rules" id="rules"></ol>
+        <p class="small muted" style="margin:12px 0 0"><span data-l="en">Apply the first rule that fits. Rules are a simplification: a few borderline salts (PbCl₂, Ag₂SO₄, Ca(OH)₂) sit between &quot;soluble&quot; and &quot;insoluble&quot;.</span><span data-l="fa">نخستین قاعده‌ای را که صدق می‌کند به کار ببرید. قاعده‌ها ساده‌سازی‌اند: چند نمک مرزی (‎PbCl₂‎، ‎Ag₂SO₄‎، ‎Ca(OH)₂‎) میان «محلول» و «نامحلول» قرار می‌گیرند.</span></p></div>
+  </div>
+  <div class="card" style="margin-top:20px">
+    <div class="card-title"><h2 style="margin:0"><span data-l="en">Mixing lab: will a precipitate form?</span><span data-l="fa">آزمایشگاه اختلاط: آیا رسوب تشکیل می‌شود؟</span></h2></div>
+    <p class="muted"><span data-l="en">Pick two salt solutions. When they are mixed, the ions can swap partners. If one of the new pairs is insoluble, it falls out of the solution as a solid (a precipitate).</span><span data-l="fa">دو محلول نمک انتخاب کنید. هنگام مخلوط شدن، یون‌ها می‌توانند شریک خود را عوض کنند. اگر یکی از جفت‌های تازه نامحلول باشد، به‌صورت جامد (رسوب) از محلول جدا می‌شود.</span></p>
+    <div class="row" style="margin:14px 0">
+      <select class="select ltr" id="c1"></select><select class="select ltr" id="a1"></select><b>+</b>
+      <select class="select ltr" id="c2"></select><select class="select ltr" id="a2"></select>
+      <button class="btn" id="mix-go"><span data-l="en">Mix</span><span data-l="fa">مخلوط کن</span></button>
+    </div>
+    <div class="row" style="margin-bottom:18px"><span class="hint"><span data-l="en">Try:</span><span data-l="fa">امتحان کنید:</span></span><div class="chips" id="mix-presets"></div></div>
+    <div id="mix-out"></div>
+  </div>
+</main>
+</body>
+</html>

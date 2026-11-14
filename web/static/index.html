@@ -1,40 +1,50 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-title-fa="پیش‌بینی انحلال‌پذیری در آب">
 <head>
 <title>SoluAI · Predict water solubility</title>
 <meta name="description" content="Predict how well a molecule dissolves in water, and see why.">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/css/style.css">
-<script>/* apply the saved (or system) theme before the page paints, to avoid a flash */
-(function(){var t=null;try{t=localStorage.getItem("soluai-theme")}catch(e){}
-if(!t){t=window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}
-document.documentElement.dataset.theme=t})();</script>
+<script src="/static/js/boot.js"></script>
 <script src="/static/js/common.js"></script>
 <script src="/static/js/predict.js" defer></script>
 </head>
 <body>
 <main class="wrap">
-  <section class="hero">
-    <span class="eyebrow">Machine learning × chemistry</span>
-    <h1>Will it dissolve in water?</h1>
-    <p class="lead">Type a molecule's name or SMILES. A model trained on 8,700 measured molecules predicts its solubility and shows which atoms help or hurt it.</p>
+<section class="hero">
+    <span class="eyebrow"><span data-l="en">Machine learning × chemistry</span><span data-l="fa">یادگیری ماشین × شیمی</span></span>
+    <h1><span data-l="en">Will it dissolve in water?</span><span data-l="fa">آیا در آب حل می‌شود؟</span></h1>
+    <p class="lead"><span data-l="en">Type a molecule's name or SMILES, or draw it. A model trained on 8,700 measured molecules predicts its solubility and shows which atoms help or hurt it. Salts such as NaCl are answered with the textbook solubility rules.</span><span data-l="fa">نام یا SMILES یک مولکول را بنویسید یا آن را رسم کنید. مدلی که با 8,700 مولکولِ اندازه‌گیری‌شده آموزش دیده، انحلال‌پذیری آن را پیش‌بینی می‌کند و نشان می‌دهد کدام اتم‌ها به حل‌شدن کمک می‌کنند یا مانع آن می‌شوند. نمک‌هایی مثل NaCl با قواعد انحلال‌پذیری کتاب درسی پاسخ داده می‌شوند.</span></p>
     <form class="search" id="search-form" autocomplete="off">
       <span aria-hidden="true" id="search-icon"></span>
-      <input id="query" name="q" placeholder="e.g. caffeine, glucose, or CCO" aria-label="Molecule name or SMILES" maxlength="300" spellcheck="false">
-      <button class="btn" id="go" type="submit">Predict</button>
+      <input id="query" name="q" dir="auto" list="names" placeholder="e.g. caffeine, glucose, NaCl or CCO" data-ph-fa="مثلاً کافئین، شکر، NaCl یا CCO" aria-label="Molecule name or SMILES" maxlength="300" spellcheck="false">
+      <datalist id="names"></datalist>
+      <button class="btn ghost small" id="draw-btn" type="button"><span id="draw-icon"></span> <span data-l="en">Draw</span><span data-l="fa">رسم</span></button>
+      <button class="btn" id="go" type="submit"><span data-l="en">Predict</span><span data-l="fa">پیش‌بینی</span></button>
     </form>
-    <div class="input-row"><span class="hint">Name lookup uses PubChem. Offline, use the list below or a SMILES such as <code>c1ccccc1O</code> (phenol).</span></div>
+    <div class="input-row"><span class="hint"><span data-l="en">225 molecules work offline (English or Persian names). Other names are looked up on PubChem. You can also type a SMILES such as <code>c1ccccc1O</code> (phenol).</span><span data-l="fa">225 مولکول بدون اینترنت کار می‌کنند (با نام فارسی یا انگلیسی). نام‌های دیگر در PubChem جست‌وجو می‌شوند. می‌توانید SMILES هم بنویسید؛ مثلاً <code>c1ccccc1O</code> (فنول).</span></span></div>
     <div class="picker">
       <div class="picker-tabs" id="picker-tabs"></div>
       <div class="chips" id="chips"></div>
     </div>
   </section>
   <section id="result" aria-live="polite"></section>
+
+  <div class="modal" id="draw-modal" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <div class="card-title"><h3><span data-l="en">Draw a molecule</span><span data-l="fa">رسم مولکول</span></h3>
+        <span class="small muted"><span data-l="en">click an atom or bond tool, then click on the canvas</span><span data-l="fa">یک ابزار اتم یا پیوند را انتخاب و روی صفحه کلیک کنید</span></span></div>
+      <div class="jsme-box" id="jsme-box"></div>
+      <div class="row spread" style="margin-top:14px">
+        <span class="small muted mono" id="draw-smiles"></span>
+        <span class="row"><button class="btn ghost" id="draw-cancel" type="button"><span data-l="en">Cancel</span><span data-l="fa">انصراف</span></button>
+        <button class="btn" id="draw-use" type="button"><span data-l="en">Predict this molecule</span><span data-l="fa">پیش‌بینی همین مولکول</span></button></span>
+      </div>
+      <p class="small muted" style="margin:10px 0 0"><span data-l="en">Editor: JSME (Bienfait &amp; Ertl), bundled with SoluAI, so it works offline.</span><span data-l="fa">ویرایشگر: JSME (Bienfait و Ertl)؛ همراه SoluAI است و بدون اینترنت کار می‌کند.</span></p>
+    </div>
+  </div>
 </main>
 </body>
 </html>

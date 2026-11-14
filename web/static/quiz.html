@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en" data-title-fa="مسابقه">
+<head>
+<title>SoluAI · Quiz</title>
+<meta name="description" content="Predict how well a molecule dissolves in water, and see why.">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/static/css/style.css">
+<script src="/static/js/boot.js"></script>
+<script src="/static/js/common.js"></script>
+<script src="/static/js/quiz.js" defer></script>
+</head>
+<body>
+<main class="wrap">
+<section class="page-title">
+    <span class="eyebrow"><span data-l="en">You vs the AI</span><span data-l="fa">شما در برابر هوش مصنوعی</span></span>
+    <h1><span data-l="en">Which one dissolves better?</span><span data-l="fa">کدام بهتر حل می‌شود؟</span></h1>
+    <p class="lead"><span data-l="en">Look at the two structures and use what you know: polar groups and hydrogen bonds help, long chains and big flat rings hurt. The answers are real lab measurements.</span><span data-l="fa">به دو ساختار نگاه کنید و از دانسته‌هایتان کمک بگیرید: گروه‌های قطبی و پیوند هیدروژنی کمک می‌کنند؛ زنجیرهای بلند و حلقه‌های تختِ بزرگ مانع‌اند. پاسخ‌ها اندازه‌گیری واقعی آزمایشگاهی‌اند.</span></p>
+    <div class="segmented" id="level"><button class="active" data-v="easy"><span data-l="en">Familiar molecules</span><span data-l="fa">مولکول‌های آشنا</span></button><button data-v="hard"><span data-l="en">Hard: any molecule</span><span data-l="fa">دشوار: هر مولکولی</span></button></div>
+  </section>
+  <div id="quiz" style="margin-top:16px" aria-live="polite"></div>
+</main>
+</body>
+</html>

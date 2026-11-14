@@ -41,7 +41,42 @@ def test_compare_needs_two(client):
     assert client.post("/api/compare", json={"queries": ["ethanol"]}).status_code == 422
 
 
-@pytest.mark.parametrize("path", ["/", "/compare", "/explore", "/model", "/chemistry"])
+def test_salt_is_answered_by_rules(client):
+    r = client.post("/api/predict", json={"query": "AgCl"}).json()
+    assert r["kind"] == "ionic" and r["status"] == "insoluble"
+
+
+def test_persian_answer_and_error(client):
+    r = client.post("/api/predict", json={"query": "شکر", "lang": "fa"}).json()
+    assert r["name_en"] == "sucrose" and r["name"] == "ساکارز" and r["measured"]
+    e = client.post("/api/predict", json={"query": "C1CC", "lang": "fa"})
+    assert e.status_code == 422 and "SMILES" in e.json()["detail"]["message"]
+
+
+def test_new_endpoints(client):
+    assert len(client.get("/api/series").json()["series"]) == 7
+    assert client.post("/api/suggest", json={"query": "toluene"}).json()["ideas"]
+    assert len(client.get("/api/quiz?n=3").json()["rounds"]) == 3
+    assert client.post("/api/batch", json={"queries": ["ethanol", "NaCl"]}).json()["n_ok"] == 1
+    assert client.post("/api/batch", json={"queries": ["C"] * 201}).status_code == 422
+    assert client.get("/api/household?lang=fa").json()["rows"]
+    t = client.get("/api/salts").json()
+    assert len(t["cells"]) == len(t["cations"]) * len(t["anions"])
+    assert client.get("/api/salts/Ba/SO4").json()["status"] == "insoluble"
+    assert client.get("/api/salts/Xx/SO4").status_code == 404
+    m = client.post("/api/salts/mix", json={"a": ["Ag", "NO3"], "b": ["Na", "Cl"]}).json()
+    assert m["precipitates"][0]["formula"] == "AgCl"
+    assert len(client.get("/api/molecules").json()["names"]) > 250
+
+
+def test_offline_assets_are_bundled(client):
+    for path in ["/static/vendor/jsme/jsme.nocache.js", "/static/vendor/fonts/vazirmatn-arabic-wght-normal.woff2",
+                 "/static/js/boot.js"]:
+        assert client.get(path).status_code == 200
+    assert "fonts.googleapis.com" not in client.get("/").text
+
+
+@pytest.mark.parametrize("path", ["/", "/compare", "/explore", "/model", "/chemistry", "/series", "/salts", "/quiz", "/batch"])
 def test_pages(client, path):
     r = client.get(path)
     assert r.status_code == 200 and "<html" in r.text
