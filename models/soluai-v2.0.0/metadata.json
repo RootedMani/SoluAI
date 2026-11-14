@@ -1,0 +1,69 @@
+{
+  "name": "SoluAI",
+  "version": "2.0.0",
+  "trained_on": "2026-11-14",
+  "algorithm": "SoluAI v2: robust LightGBM boosting (chemist) + trust model (referee)",
+  "features": "rdkit+fp",
+  "n_features": 1242,
+  "params": {
+    "subsample": 0.8,
+    "reg_lambda": 10.0,
+    "objective": "huber",
+    "num_leaves": 31,
+    "n_estimators": 1500,
+    "min_child_samples": 10,
+    "learning_rate": 0.03,
+    "colsample_bytree": 0.5,
+    "alpha": 1.5
+  },
+  "n_training_molecules": 8754,
+  "config_hash": "64ab4c0895f2",
+  "data_sha256": {
+    "aqsoldb_curated.csv": "363a42a4e4ea8e6039758146d34efdd95cde2da81c665316cacc1869e0a805ed",
+    "esol_delaney.csv": "8c06a76f0c6487d29ab0f903e6a7a7139f189ab3c1178f159c8be8964602f189"
+  },
+  "conformal": {
+    "threshold": 0.3,
+    "coverage": 0.9,
+    "q": {
+      "in": 1.4035617911981308,
+      "out": 1.5226034499631864
+    }
+  },
+  "trust": {
+    "q": 2.1568,
+    "floor": 0.15,
+    "neighbours": 5,
+    "tiers": {
+      "high": 0.8,
+      "medium": 1.4
+    },
+    "tier_share_out_of_fold": {
+      "scaffold": {
+        "high": 0.028,
+        "medium": 0.577,
+        "low": 0.395
+      },
+      "random": {
+        "high": 0.213,
+        "medium": 0.561,
+        "low": 0.226
+      }
+    },
+    "median_half_width_out_of_fold": {
+      "scaffold": 1.298,
+      "random": 1.038
+    },
+    "random_cv_rmse": 0.785
+  },
+  "scaffold_cv_rmse_of_choice": 0.914,
+  "packages": {
+    "python": "3.13.18",
+    "rdkit": "2026.09.2",
+    "lightgbm": "4.7.0",
+    "scikit-learn": "1.9.1",
+    "numpy": "2.5.4",
+    "pandas": "3.1.1",
+    "soluai": "2.0.0"
+  }
+}

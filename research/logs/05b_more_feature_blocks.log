@@ -1,0 +1,13 @@
+random    R+FP                 CV 0.800 | test 0.795 R2 0.880 w1 0.833 | reliable 0.480 R2 0.952
+random    R+E                  CV 0.811 | test 0.797 R2 0.879 w1 0.832 | reliable 0.506 R2 0.946
+random    R+CR                 CV 0.814 | test 0.795 R2 0.880 w1 0.836 | reliable 0.484 R2 0.951
+random    R+E+CR               CV 0.809 | test 0.797 R2 0.879 w1 0.835 | reliable 0.499 R2 0.948
+random    R+E+CR+FP            CV 0.802 | test 0.797 R2 0.879 w1 0.832 | reliable 0.497 R2 0.948
+random    R+E+CR+AP            CV 0.802 | test 0.788 R2 0.882 w1 0.840 | reliable 0.485 R2 0.951
+random    R+E+CR+M+FP+AP+TT    CV 0.798 | test 0.792 R2 0.881 w1 0.839 | reliable 0.474 R2 0.953
+scaffold  R+FP                 CV 0.904 | test 0.937 R2 0.818 w1 0.769 | reliable 0.827 R2 0.854
+scaffold  R+E                  CV 0.909 | test 0.957 R2 0.810 w1 0.757 | reliable 0.835 R2 0.851
+scaffold  R+CR                 CV 0.915 | test 0.960 R2 0.809 w1 0.753 | reliable 0.823 R2 0.855
+scaffold  R+E+CR               CV 0.914 | test 0.951 R2 0.812 w1 0.756 | reliable 0.814 R2 0.858
+scaffold  R+E+CR+FP            CV 0.903 | test 0.949 R2 0.813 w1 0.757 | reliable 0.840 R2 0.849
+scaffold  R+E+CR+AP            CV 0.903 | test 0.952 R2 0.812 w1 0.765 | reliable 0.819 R2 0.857

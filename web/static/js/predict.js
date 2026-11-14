@@ -64,7 +64,7 @@ function printHeader() {
       "برآورد یادگیری ماشین از انحلال‌پذیری در آب در حدود 25 درجهٔ سلسیوس؛ اندازه‌گیری آزمایشگاهی نیست.")}</p></div>`;
 }
 
-const WIDE_FA = { "Overall size": "اندازهٔ کلی", "Compared with the average molecule": "در مقایسه با مولکول میانگین",
+const WIDE_FA = { "Overall size": "اندازهٔ کلی", "Shape and charge pattern": "شکل و الگوی بار", "Compared with the average molecule": "در مقایسه با مولکول میانگین",
   "Fragments not present": "قطعه‌هایی که وجود ندارند", "Other": "سایر" };
 
 /* Measured value, SoluAI and the classic hand-made formula on one scale. */

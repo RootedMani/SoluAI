@@ -1,0 +1,22 @@
+random: fixed ±1.23 coverage 0.892 | adaptive q=2.15 coverage 0.895 mean hw 1.17 median hw 1.03  corr(sig,err) 0.39
+  most-confident  20% n= 350 rmse 0.408 R2 0.970 within1 0.960 within0.5 0.851 cov 0.906 mean hw 0.61
+  most-confident  33% n= 577 rmse 0.445 R2 0.957 within1 0.958 within0.5 0.809 cov 0.905 mean hw 0.68
+  most-confident  50% n= 875 rmse 0.539 R2 0.935 within1 0.934 within0.5 0.745 cov 0.891 mean hw 0.77
+  most-confident  67% n=1173 rmse 0.613 R2 0.918 within1 0.906 within0.5 0.699 cov 0.884 mean hw 0.86
+  most-confident 100% n=1751 rmse 0.795 R2 0.880 within1 0.834 within0.5 0.613 cov 0.895 mean hw 1.17
+  tier high   n= 601 rmse 0.449 R2 0.956 within1 0.957 cov 0.903
+  tier medium n= 580 rmse 0.755 R2 0.872 within1 0.850 cov 0.860
+  tier low    n= 570 rmse 1.072 R2 0.783 within1 0.689 cov 0.923
+  old flag: sim>=0.3 rmse 0.791 (n=1710) ; <0.3 rmse 0.972 (n=41)
+
+scaffold: fixed ±1.44 coverage 0.885 | adaptive q=2.13 coverage 0.897 mean hw 1.51 median hw 1.42  corr(sig,err) 0.31
+  most-confident  20% n= 350 rmse 0.635 R2 0.915 within1 0.874 within0.5 0.614 cov 0.891 mean hw 1.01
+  most-confident  33% n= 577 rmse 0.703 R2 0.887 within1 0.854 within0.5 0.584 cov 0.889 mean hw 1.09
+  most-confident  50% n= 875 rmse 0.733 R2 0.862 within1 0.832 within0.5 0.568 cov 0.896 mean hw 1.17
+  most-confident  67% n=1173 rmse 0.786 R2 0.835 within1 0.824 within0.5 0.550 cov 0.897 mean hw 1.26
+  most-confident 100% n=1751 rmse 0.948 R2 0.813 within1 0.760 within0.5 0.483 cov 0.897 mean hw 1.51
+  tier high   n= 384 rmse 0.678 R2 0.903 within1 0.865 cov 0.883
+  tier medium n= 573 rmse 0.775 R2 0.813 within1 0.813 cov 0.908
+  tier low    n= 794 rmse 1.151 R2 0.715 within1 0.671 cov 0.897
+  old flag: sim>=0.3 rmse 0.950 (n=1611) ; <0.3 rmse 0.926 (n=140)
+(the "tier" lines of this prototype used thirds of the training molecules; the final algorithm uses fixed widths)

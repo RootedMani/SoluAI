@@ -115,8 +115,8 @@ and the final screen says so.
 ## 8. Batch (`lab.batch`)
 
 Paste a list or load a CSV, get a table, download a CSV. Each row has logS, the 90% range, g/L,
-class, pharmacopoeia term, lab value, classic formula, and whether the molecule is familiar to the
-model. Salts in the list are answered by the rules. Batch mode never uses the internet.
+class, pharmacopoeia term, lab value, classic formula, and the model's confidence label (high /
+medium / low). Salts in the list are answered by the rules. Batch mode never uses the internet.
 
 ## 9. Persian and right-to-left
 

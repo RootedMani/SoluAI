@@ -1,7 +1,7 @@
 # SoluAI training configuration.
 # Every number that affects the result lives here, so training is reproducible:
 #   python -m soluai.train --config config.yaml
-model_version: "1.0.0"
+model_version: "2.0.0"
 seed: 42
 
 data:
@@ -23,6 +23,7 @@ search:                          # small random hyper-parameter search, 5-fold C
   n_iter:                        # number of random settings tried (random forest is ~5x slower to train)
     random_forest: 6
     lightgbm: 12
+    soluai_v2: 5                 # each setting is ~3x slower (more trees, 1,242 features)
   random_forest:
     n_estimators: [300]
     max_features: [0.2, 0.33, "sqrt"]
@@ -36,7 +37,22 @@ search:                          # small random hyper-parameter search, 5-fold C
     subsample: [0.7, 0.9, 1.0]
     colsample_bytree: [0.3, 0.5, 0.8]
     reg_lambda: [0.0, 1.0, 5.0]
+  soluai_v2:                     # the "chemist" of model v2: robust (Huber) boosting on rdkit+fp features
+    objective: ["huber"]         # big errors count linearly, not squared: one bad lab value cannot dominate
+    alpha: [1.0, 1.5]            # error size (log units) where the loss switches from squared to linear
+    n_estimators: [1500]
+    learning_rate: [0.03]
+    num_leaves: [15, 31, 63]
+    min_child_samples: [5, 10, 20]
+    subsample: [0.7, 0.8, 0.9]
+    colsample_bytree: [0.2, 0.3, 0.5]
+    reg_lambda: [1.0, 5.0, 10.0]
 
 uncertainty:
   coverage: 0.90
   domain_similarity_threshold: 0.30   # max Tanimoto to training set below this -> "outside experience"
+  trust:                              # the "referee" of model v2 (see docs/algorithm.md)
+    neighbours: 5                     # closest training molecules used for the trust signals
+    floor: 0.15                       # smallest expected error the referee may claim (log units)
+    tiers: {high: 0.8, medium: 1.4}   # confidence label from the half-width of the 90% range
+    reliable_groups: [G3, G5]         # AqSolDB groups measured 2+ times with agreeing values (SD <= 0.5)

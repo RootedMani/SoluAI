@@ -191,8 +191,41 @@ function scaleBar(r) {
   </div>`;
 }
 
+/* Model v2: the "referee" gives every prediction a confidence label from the width of its 90% range. */
+const CONFIDENCE = {
+  high: { en: "High confidence", fa: "اطمینان بالا", cls: "ok" },
+  medium: { en: "Medium confidence", fa: "اطمینان متوسط", cls: "ok" },
+  low: { en: "Low confidence", fa: "اطمینان پایین", cls: "warn" },
+};
+function confidencePill(level) {
+  const c = CONFIDENCE[level];
+  if (!c) return "";
+  return level === "low" ? `<span class="pill" style="color:var(--warn-ink)">⚠ ${T("low", "پایین")}</span>`
+    : `<span class="pill ${level === "high" ? "accent" : ""}">${level === "high" ? T("high", "بالا") : T("medium", "متوسط")}</span>`;
+}
+function confidenceBox(r) {
+  const d = r.domain, c = CONFIDENCE[d.confidence], sim = Math.round(d.max_similarity * 100);
+  const hw = (r.interval[1] - r.interval[0]) / 2, factor = Math.pow(10, hw);
+  const f = factor < 10 ? factor.toFixed(1) : String(Math.round(factor / 5) * 5);
+  const why = !d.in_domain
+    ? T(`The closest training molecule is only ${sim}% similar (or a property is outside the training range), so the model has almost no experience here. Treat the number as a rough guide.`,
+      `نزدیک‌ترین مولکول آموزشی فقط ${sim}% شباهت دارد (یا یکی از ویژگی‌ها بیرون از بازهٔ آموزش است)؛ پس مدل این‌جا تقریباً تجربه‌ای ندارد. این عدد را فقط یک راهنمای تقریبی بدانید.`)
+    : d.confidence === "high"
+    ? T("Molecules like this one were predicted well when the model had not seen them.", "مدل مولکول‌هایی شبیه این را، وقتی آن‌ها را ندیده بود، خوب پیش‌بینی کرده است.")
+    : d.confidence === "medium"
+      ? T("The model has some experience with molecules like this one.", "مدل با مولکول‌هایی شبیه این تا حدی تجربه دارد.")
+      : T("Molecules like this one were hard for the model, or it has seen few of them. Treat the number as a rough guide.", "مولکول‌هایی شبیه این برای مدل سخت بوده‌اند یا نمونه‌های کمی از آن‌ها دیده است. این عدد را فقط یک راهنمای تقریبی بدانید.");
+  const extra = d.out_of_range_descriptors.length ? T(` Some properties (${d.out_of_range_descriptors.join(", ")}) are outside the training range.`,
+    ` برخی ویژگی‌ها (‎${d.out_of_range_descriptors.join(", ")}‎) بیرون از بازهٔ داده‌های آموزشی‌اند.`) : "";
+  return `<div class="callout ${c.cls}">${c.cls === "ok" ? ICONS.check : ICONS.warn}<p><b>${T(c.en, c.fa)}.</b> ${T(
+    `The 90% range is ± ${hw.toFixed(1)} log units: the true solubility is probably within a factor of ${f} of the prediction.`,
+    `بازهٔ 90% برابر ± ${hw.toFixed(1)} واحد لگاریتمی است: انحلال‌پذیری واقعی احتمالاً حداکثر ${f} برابر با پیش‌بینی فاصله دارد.`)} ${why}${
+    d.in_domain ? ` ${T(`The most similar training molecule is ${sim}% similar.`, `شبیه‌ترین مولکول آموزشی ${sim}% شباهت دارد.`)}` : ""}${esc(extra)}</p></div>`;
+}
+
 function domainBox(r) {
   const d = r.domain, sim = Math.round(d.max_similarity * 100);
+  if (d.confidence) return confidenceBox(r);
   if (d.in_domain) {
     return `<div class="callout ok">${ICONS.check}<p>${T(`Familiar territory: the most similar training molecule is ${sim}% similar.`,
       `محدودهٔ آشنا: شبیه‌ترین مولکول آموزشی ${sim}% به این مولکول شباهت دارد.`)}</p></div>`;
@@ -210,6 +243,8 @@ const FEATURE_FA = {
   FractionCSP3: "سهم کربن‌های ‎sp³‎", RingCount: "تعداد حلقه‌ها", NumAromaticRings: "حلقه‌های آروماتیک", HeavyAtomCount: "اتم‌های سنگین",
   NumHeteroatoms: "هترواتم‌ها", MolMR: "شکست مولی", NumValenceElectrons: "الکترون‌های ظرفیت",
   fp_present: "قطعه‌های موجود", fp_absent: "قطعه‌های غایب",
+  family_surface: "سطح مولکول بر پایهٔ قطبیت", family_groups: "شمار گروه‌های عاملی", family_shape: "شکل و شاخه‌داری",
+  family_charge: "بارها و حالت‌های الکترونی", family_size: "سنجه‌های دیگر اندازه", family_other: "توصیف‌گرهای دیگر",
 };
 function shapBars(contribs, n = 8) {
   const items = contribs.slice(0, n);
