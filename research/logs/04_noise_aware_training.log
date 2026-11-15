@@ -1,0 +1,18 @@
+random
+plain                                      CV 0.804 | test 0.795 R2 0.880 w1 0.834 | reliable 0.484 R2 0.951 w1 0.946
+weights reliable=2 conflicting=0.5         CV 0.804 | test 0.801 R2 0.878 w1 0.836 | reliable 0.487 R2 0.950 w1 0.953
+weights reliable=3 conflicting=0.5         CV 0.803 | test 0.797 R2 0.879 w1 0.840 | reliable 0.488 R2 0.950 w1 0.960
+weights reliable=3 conflicting=1           CV 0.805 | test 0.796 R2 0.879 w1 0.837 | reliable 0.479 R2 0.952 w1 0.946
+huber(1.0)                                 CV 0.800 | test 0.795 R2 0.880 w1 0.833 | reliable 0.480 R2 0.952 w1 0.949
+self-clean c=1.5 (+reliable x2) [test only] CV 0.804 | test 0.803 R2 0.877 w1 0.836 | reliable 0.471 R2 0.953 w1 0.953
+self-clean c=2.0 (+reliable x2) [test only] CV 0.804 | test 0.800 R2 0.878 w1 0.835 | reliable 0.479 R2 0.952 w1 0.953
+bigger lgbm                                CV 0.805 | test 0.789 R2 0.881 w1 0.838 | reliable 0.480 R2 0.952 w1 0.949
+scaffold
+plain                                      CV 0.906 | test 0.948 R2 0.813 w1 0.760 | reliable 0.832 R2 0.852 w1 0.822
+weights reliable=2 conflicting=0.5         CV 0.909 | test 0.954 R2 0.811 w1 0.756 | reliable 0.838 R2 0.850 w1 0.822
+weights reliable=3 conflicting=0.5         CV 0.908 | test 0.949 R2 0.813 w1 0.764 | reliable 0.841 R2 0.849 w1 0.815
+weights reliable=3 conflicting=1           CV 0.909 | test 0.949 R2 0.813 w1 0.762 | reliable 0.842 R2 0.848 w1 0.822
+huber(1.0)                                 CV 0.904 | test 0.937 R2 0.818 w1 0.769 | reliable 0.827 R2 0.854 w1 0.833
+self-clean c=1.5 (+reliable x2) [test only] CV 0.906 | test 0.953 R2 0.811 w1 0.760 | reliable 0.842 R2 0.848 w1 0.822
+self-clean c=2.0 (+reliable x2) [test only] CV 0.906 | test 0.951 R2 0.812 w1 0.753 | reliable 0.836 R2 0.850 w1 0.822
+bigger lgbm                                CV 0.917 | test 0.948 R2 0.813 w1 0.757 | reliable 0.839 R2 0.849 w1 0.833

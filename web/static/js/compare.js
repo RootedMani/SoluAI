@@ -78,7 +78,8 @@ function card(r) {
     ${r.measured ? `<div class="small muted">${T("measured in the lab", "اندازه‌گیری آزمایشگاهی")}: <b class="ltr">${num(r.measured.logS)}</b></div>` : ""}
     ${scaleBar(r)}
     <p class="small" style="margin-top:14px">${esc(top)}</p>
-    ${r.domain.in_domain ? "" : `<p class="small" style="color:var(--warn-ink)">⚠ ${T("Outside the model's experience", "بیرون از تجربهٔ مدل")}</p>`}
+    ${r.domain.confidence ? `<p class="small muted">${T("Confidence", "اطمینان")}: ${confidencePill(r.domain.confidence)}</p>`
+      : r.domain.in_domain ? "" : `<p class="small" style="color:var(--warn-ink)">⚠ ${T("Outside the model's experience", "بیرون از تجربهٔ مدل")}</p>`}
   </div>`;
 }
 

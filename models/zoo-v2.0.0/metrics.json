@@ -89,6 +89,15 @@
      "w05": 0.337,
      "n": 1718,
      "q90_cv": 2.1487
+    },
+    "chemist": {
+     "rmse": 0.7963,
+     "mae": 0.5387,
+     "r2": 0.8817,
+     "w1": 0.844,
+     "w05": 0.6187,
+     "n": 1718,
+     "q90_cv": 1.286
     }
    }
   },
@@ -174,8 +183,18 @@
      "w05": 0.3097,
      "n": 1718,
      "q90_cv": 2.0414
+    },
+    "chemist": {
+     "rmse": 0.9955,
+     "mae": 0.7221,
+     "r2": 0.8413,
+     "w1": 0.7555,
+     "w05": 0.4825,
+     "n": 1718,
+     "q90_cv": 1.4558
     }
    }
   }
- }
+ },
+ "note_chemist": "SoluAI v2.0 (chemist) recipe retrained on the same training molecules: experiments/v2-consensus-stacking/chemist_bench.py"
 }

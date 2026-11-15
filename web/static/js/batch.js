@@ -57,11 +57,11 @@ function row(r, i) {
   return `<tr><td>${i + 1}</td><td><a href="/?q=${encodeURIComponent(r.smiles)}" target="_blank" dir="auto">${esc(r.query)}</a></td><td class="ltr">${formula(r.formula)}</td>
     <td class="num ltr"><b>${num(r.logS)}</b></td><td class="num ltr">${num(r.low, 1)} … ${num(r.high, 1)}</td><td class="num ltr">${fmtConc(r.g_per_L)}</td>
     <td>${badge(r.category)}</td><td class="num ltr">${r.measured === null ? "–" : num(r.measured)}</td>
-    <td>${r.in_domain ? `<span class="pill accent">${T("familiar", "آشنا")}</span>` : `<span class="pill" style="color:var(--warn-ink)">⚠ ${T("unfamiliar", "ناآشنا")}</span>`}</td></tr>`;
+    <td>${r.confidence ? confidencePill(r.confidence) : r.in_domain ? `<span class="pill accent">${T("familiar", "آشنا")}</span>` : `<span class="pill" style="color:var(--warn-ink)">⚠ ${T("unfamiliar", "ناآشنا")}</span>`}</td></tr>`;
 }
 
 function toCsv() {
-  const cols = ["query", "kind", "name", "smiles", "formula", "mol_weight", "logS", "low", "high", "g_per_L", "category", "usp", "measured", "classic", "in_domain", "similarity", "status", "measured_g_per_100mL", "error"];
+  const cols = ["query", "kind", "name", "smiles", "formula", "mol_weight", "logS", "low", "high", "g_per_L", "category", "usp", "measured", "classic", "confidence", "in_domain", "similarity", "status", "measured_g_per_100mL", "error"];
   const cell = (v) => (v === null || v === undefined ? "" : /[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v));
   return [cols.join(","), ...ROWS.map((r) => cols.map((c) => cell(r[c])).join(","))].join("\n");
 }

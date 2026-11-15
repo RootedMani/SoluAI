@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-__version__ = "1.2.0"
+__version__ = "2.1.0"
 
 #: Root folder of the repository (two levels above this file).
 ROOT = Path(__file__).resolve().parents[2]

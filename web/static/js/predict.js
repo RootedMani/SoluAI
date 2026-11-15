@@ -66,7 +66,7 @@ function printHeader() {
       "برآورد یادگیری ماشین از انحلال‌پذیری در آب در حدود 25 درجهٔ سلسیوس؛ اندازه‌گیری آزمایشگاهی نیست.")}</p></div>`;
 }
 
-const WIDE_FA = { "Overall size": "اندازهٔ کلی", "Compared with the average molecule": "در مقایسه با مولکول میانگین",
+const WIDE_FA = { "Overall size": "اندازهٔ کلی", "Shape and charge pattern": "شکل و الگوی بار", "Compared with the average molecule": "در مقایسه با مولکول میانگین",
   "Fragments not present": "قطعه‌هایی که وجود ندارند", "Other": "سایر" };
 
 /* Measured value, SoluAI and the classic hand-made formula on one scale. */
@@ -118,7 +118,7 @@ function renderResult(r) {
         </div>
       </div>
       <div class="mol-paper" id="mol-svg">${r.svg_explained}</div>
-      ${r.model.id === "v1" ? "" : `<p class="small muted" style="margin:10px 0 0">${T(`Colours: SoluAI v1.0's explanation (v1.0 predicts ${num(r.explained_by.logS)}).`, `رنگ‌ها: توضیح SoluAI v1.0 (پیش‌بینی v1.0: ‎${num(r.explained_by.logS)}‎).`)}</p>`}
+      ${r.model.id === r.explained_by.id ? "" : `<p class="small muted" style="margin:10px 0 0">${T(`Colours: the explanation of ${r.explained_by.name}, which predicts ${num(r.explained_by.logS)}.`, `رنگ‌ها: توضیح ${r.explained_by.name}، که ‎${num(r.explained_by.logS)}‎ پیش‌بینی می‌کند.`)}</p>`}
       <div class="legend" style="margin-top:12px">
         <span><i style="background:var(--up)"></i>${T("raises solubility", "انحلال‌پذیری را بالا می‌برد")}</span>
         <span><i style="background:var(--down)"></i>${T("lowers solubility", "انحلال‌پذیری را پایین می‌آورد")}</span>
@@ -269,11 +269,11 @@ function loadIntoEditor() {
 }
 
 /* ------------------------------------------------------------------ every model's answer */
-/* The atom colours and SHAP bars always come from SoluAI v1.0: say so when another model is chosen. */
+/* The atom colours and SHAP bars always come from the main model (explained_by): say so when another model is chosen. */
 function explainNote(r) {
-  if (r.model.id === "v1") return "";
-  return `<p class="small muted" style="margin-top:8px">${T(`This explanation is from SoluAI v1.0, the only model that can be explained atom by atom. ${r.model.name} predicts ${num(r.logS)}.`,
-    `این توضیح از SoluAI v1.0 است؛ تنها مدلی که می‌توان سهم هر اتم را در آن توضیح داد. پیش‌بینی ${r.model.name} برابر ‎${num(r.logS)}‎ است.`)}</p>`;
+  if (r.model.id === r.explained_by.id) return "";
+  return `<p class="small muted" style="margin-top:8px">${T(`This explanation is from ${r.explained_by.name}, the only model that can be explained atom by atom. ${r.model.name} predicts ${num(r.logS)}. The confidence label also belongs to ${r.explained_by.name} only.`,
+    `این توضیح از ${r.explained_by.name} است؛ تنها مدلی که می‌توان سهم هر اتم را در آن توضیح داد. پیش‌بینی ${r.model.name} برابر ‎${num(r.logS)}‎ است. برچسب اطمینان هم فقط مربوط به ${r.explained_by.name} است.`)}</p>`;
 }
 
 function everyModel(r) {

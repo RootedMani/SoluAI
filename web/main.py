@@ -28,7 +28,7 @@ from soluai import RESULTS_DIR, __version__, ionic, lab  # noqa: E402
 from soluai.common_molecules import COMMON, FA_CATEGORIES, SYNONYMS, fa_name  # noqa: E402
 from soluai.explain import analyze, usp_term  # noqa: E402
 from soluai.predict import CATEGORIES, Predictor, category  # noqa: E402
-from soluai.zoo import DEFAULT_MODEL, MODEL_IDS, Zoo  # noqa: E402
+from soluai.zoo import BASE_MODEL, DEFAULT_MODEL, MODEL_IDS, Zoo  # noqa: E402
 from soluai.resolve import InputError, resolve  # noqa: E402
 
 STATIC = Path(__file__).parent / "static"
@@ -48,7 +48,7 @@ def predictor() -> Predictor:
 
 @lru_cache(maxsize=1)
 def zoo() -> Zoo:
-    """All selectable models (SoluAI v1.0, the v2 models and Delaney's formula)."""
+    """All selectable models (SoluAI v2.0 and v1.0, the zoo models and Delaney's formula)."""
     z = Zoo(predictor())
     z.v2.load_all()
     return z
@@ -78,7 +78,7 @@ Query = Annotated[str, StringConstraints(strip_whitespace=True, max_length=300)]
 
 
 Lang = Literal["en", "fa"]
-ModelId = Literal[tuple(MODEL_IDS)]  # "v2", "v1", "v2-lgbm", ... see soluai/zoo.py
+ModelId = Literal[tuple(MODEL_IDS)]  # "consensus", "chemist", "v1", "zoo-lgbm", ... see soluai/zoo.py
 QuizLevel = Literal["easy", "medium", "hard", "expert"]
 
 
@@ -147,23 +147,23 @@ def _error(err: InputError, query: str, lang: str = "en") -> HTTPException:
 def with_model(result: dict, mol, model: str, lang: str = "en") -> dict:
     """Swap the headline numbers for the chosen model's, and add every model's answer.
 
-    The atom-by-atom explanation (SHAP) only exists for SoluAI v1.0, so it stays as it is and
-    ``explained_by`` says which model and value it explains.
+    The atom-by-atom explanation (SHAP) only exists for the main model (SoluAI v2.0), so it stays
+    as it is and ``explained_by`` says which model and value it explains.
     """
     z = zoo()
     every = z.predict_all([mol])
-    v1 = float(every["v1"][0])
+    explained = float(every[BASE_MODEL][0])
     logS = float(every[model][0])
     mw = result["mol_weight"]
-    dom = view(model).domain(mol)
+    dom = view(model).domain(mol, pred=logS)
     hw = dom["half_width"]
     result.update({
         "logS": round(logS, 2), "interval": [round(logS - hw, 2), round(logS + hw, 2)],
         "g_per_L": float(f"{(10 ** logS) * mw:.3g}"), "mg_per_L": float(f"{(10 ** logS) * mw * 1000:.3g}"),
         "category": category(logS), "usp": usp_term((10 ** logS) * mw),
-        "domain": {**result["domain"], "half_width": hw},
+        "domain": dom,
         "model": {"id": model, "name": z.label(model, lang)},
-        "explained_by": {"id": "v1", "name": z.label("v1", lang), "logS": round(v1, 2)},
+        "explained_by": {"id": BASE_MODEL, "name": z.label(BASE_MODEL, lang), "logS": round(explained, 2)},
     })
     rows = [{"id": i["id"], "name": i["name"], "logS": round(float(every[i["id"]][0]), 2),
              "category": category(float(every[i["id"]][0])), "test_r2": i["test"]["random"]["r2"]}
