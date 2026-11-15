@@ -493,3 +493,6 @@ textarea.area:focus { outline: 0; border-color: var(--accent); box-shadow: 0 0 0
 .leader td:first-child { min-width: 150px; }
 .leader tr.me { font-weight: 700; }
 .pill { white-space: nowrap; }
+.model-picker label { max-width: 100%; min-width: 0; }
+.model-picker .select { max-width: calc(100vw - 150px); text-overflow: ellipsis; }
+#level { flex-wrap: wrap; max-width: 100%; }

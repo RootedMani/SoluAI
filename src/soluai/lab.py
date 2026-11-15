@@ -286,14 +286,14 @@ def warm_up(zoo) -> None:
 def quick(predictor: "Predictor", mol: Chem.Mol, logS: float | None = None) -> dict:
     """The key numbers for one molecule, without the (slower) explanation (``logS``: already predicted)."""
     logS = predictor.predict_mol(mol) if logS is None else float(logS)
-    dom = predictor.domain(mol, k=1)
+    dom = predictor.domain(mol, k=1, pred=logS)
     mw = Descriptors.MolWt(mol)
     hw = dom["half_width"]
     m = predictor.measured(mol)
     g = (10 ** logS) * mw
     return {"logS": round(logS, 2), "low": round(logS - hw, 2), "high": round(logS + hw, 2),
             "g_per_L": float(f"{g:.3g}"), "category": category(logS), "usp": usp_term(g),
-            "in_domain": dom["in_domain"], "similarity": dom["max_similarity"],
+            "in_domain": dom["in_domain"], "similarity": dom["max_similarity"], "confidence": dom.get("confidence"),
             "measured": m["logS"] if m else None, "classic": round(delaney_one(mol), 2),
             "formula": rdMolDescriptors.CalcMolFormula(mol), "mol_weight": round(mw, 2)}
 

@@ -1,16 +1,14 @@
 """The model zoo: several different models you can choose between and compare.
 
-SoluAI v1.0 is one model. Version 2 adds five more, trained on a larger merged dataset
-(13 public sources, 8,589 molecules), and a *consensus* that blends them:
-
-* ``v2-lgbm``  - gradient boosting (LightGBM) on 217 descriptors + fragment counts
-* ``v2-huber`` - the same, but with a "robust" loss that pays less attention to outliers
-* ``v2-cat``   - CatBoost, a different gradient-boosting library
-* ``v2-svr``   - a similarity model: it predicts from the molecules it knows that look most alike
-* ``v2-mlp``   - a small neural network (three of them, averaged)
-* ``v2``       - the consensus: a weighted average of the five, weights learned by cross-validation
-
-Plus ``delaney``: Delaney's 2004 formula (no machine learning), to show how far ML has come.
+* ``chemist``   - SoluAI v2.0, the main model (``models/LATEST``): robust boosting ("chemist")
+                  plus a "referee" that sizes each prediction's range. The only model with the
+                  atom-by-atom explanation and the confidence label.
+* ``v1``        - SoluAI v1.0, the original model (``models/soluai-v1.0.0``).
+* five models trained on a larger merged dataset (13 public sources, 8,589 molecules):
+  ``zoo-lgbm`` (gradient boosting on 217 descriptors + fragment counts), ``zoo-huber`` (the same with a
+  robust loss), ``zoo-cat`` (CatBoost), ``zoo-svr`` (a similarity model), ``zoo-mlp`` (neural networks)
+* ``consensus`` - a weighted average of those five, weights learned by cross-validation
+* ``delaney``   - Delaney's 2004 formula (no machine learning), to show how far ML has come.
 
 Every model gives a prediction for every molecule, so the website can show where they agree
 (more trust) and where they disagree (less trust).
@@ -34,29 +32,33 @@ RDLogger.DisableLog("rdApp.*")
 
 ZOO_DIR = MODELS_DIR / "zoo-v2.0.0"
 MEMBERS = ["lgbm", "huber", "cat", "svr", "mlp"]
-DEFAULT_MODEL = "v2"
+DEFAULT_MODEL = "consensus"
+BASE_MODEL = "chemist"  # the model in models/LATEST; it explains atoms and has the referee
 
 #: Shown on the website. (id, English name, Persian name, English description, Persian description)
 INFO: list[tuple[str, str, str, str, str]] = [
-    ("v2", "SoluAI v2 · consensus", "SoluAI v2 · اجماع",
-     "Blends the five v2 models below. The most accurate on unseen molecules.",
-     "ترکیب پنج مدل v2 زیر. دقیق‌ترین مدل روی مولکول‌های دیده‌نشده."),
+    ("consensus", "Consensus of 5 models", "اجماع ۵ مدل",
+     "Blends the five zoo models below. The most accurate on unseen molecules.",
+     "ترکیب پنج مدل زیر (LightGBM، هوبر، CatBoost، SVR و شبکهٔ عصبی). دقیق‌ترین مدل روی مولکول‌های دیده‌نشده."),
+    ("chemist", "SoluAI v2.0 · chemist + referee", "SoluAI v2.0 · شیمی‌دان + داور",
+     "Robust boosting on 1,242 features, plus a referee that says how sure it is. Explains each atom.",
+     "تقویت مقاوم روی ۱۲۴۲ ویژگی، به‌همراه داوری که می‌گوید چقدر مطمئن است. سهم هر اتم را توضیح می‌دهد."),
     ("v1", "SoluAI v1.0", "SoluAI v1.0",
-     "The original model: LightGBM on 14 descriptors + a fingerprint. The only one that can explain each atom.",
-     "مدل اصلی: LightGBM روی ۱۴ توصیفگر و یک اثر انگشت. تنها مدلی که می‌تواند سهم هر اتم را توضیح دهد."),
-    ("v2-lgbm", "Gradient boosting (LightGBM)", "تقویت گرادیانی (LightGBM)",
+     "The original model: LightGBM on 14 descriptors + a fingerprint.",
+     "مدل اصلی: LightGBM روی ۱۴ توصیفگر و یک اثر انگشت."),
+    ("zoo-lgbm", "Gradient boosting (LightGBM)", "تقویت گرادیانی (LightGBM)",
      "1,500 small decision trees, each one fixing the mistakes of the ones before it.",
      "۱۵۰۰ درخت تصمیم کوچک که هر کدام اشتباه درخت‌های قبلی را اصلاح می‌کند."),
-    ("v2-huber", "Robust boosting (Huber)", "تقویت مقاوم (هوبر)",
+    ("zoo-huber", "Robust boosting (Huber)", "تقویت مقاوم (هوبر)",
      "Same trees, but large errors count less, so a few wrong lab values can't pull it off course.",
      "همان درخت‌ها، اما خطاهای بزرگ وزن کمتری دارند تا چند داده‌ٔ اشتباه آزمایشگاهی مدل را منحرف نکند."),
-    ("v2-cat", "CatBoost", "CatBoost",
+    ("zoo-cat", "CatBoost", "CatBoost",
      "Another boosting library with balanced (symmetric) trees: a second opinion from the same family.",
      "کتابخانهٔ تقویتی دیگری با درخت‌های متقارن: نظر دوم از همان خانواده."),
-    ("v2-svr", "Similarity model (SVR)", "مدل شباهت (SVR)",
+    ("zoo-svr", "Similarity model (SVR)", "مدل شباهت (SVR)",
      "Looks for the known molecules that share the most fragments and predicts from them.",
      "مولکول‌های شناخته‌شده‌ای را پیدا می‌کند که بیشترین قطعهٔ مشترک را دارند و از روی آن‌ها پیش‌بینی می‌کند."),
-    ("v2-mlp", "Neural network", "شبکهٔ عصبی",
+    ("zoo-mlp", "Neural network", "شبکهٔ عصبی",
      "Three small neural networks (512 → 256 neurons), averaged.",
      "سه شبکهٔ عصبی کوچک (۵۱۲ ← ۲۵۶ نورون) که میانگین آن‌ها گرفته می‌شود."),
     ("delaney", "Classic formula (Delaney 2004)", "فرمول کلاسیک (دلانی ۲۰۰۴)",
@@ -225,11 +227,19 @@ class V2Models:
 class Zoo:
     """All selectable models. ``base`` is the v1.0 ``Predictor`` (it also holds the training data lookups)."""
 
-    def __init__(self, base, folder: Path = ZOO_DIR) -> None:
+    def __init__(self, base, folder: Path = ZOO_DIR, v1_dir: Path = MODELS_DIR / "soluai-v1.0.0") -> None:
+        from .predict import Predictor
+
         self.base = base
+        # SoluAI v1.0 stays available even though models/LATEST now points to v2.0.
+        self.v1 = base if base.version.startswith("1.") else Predictor(v1_dir)
         self.v2 = V2Models(folder)
         self.metrics = json.loads((folder / "metrics.json").read_text())
         self._views: dict[str, ModelView] = {}
+
+    @staticmethod
+    def _tree(pred, mols: list[Chem.Mol]) -> np.ndarray:
+        return pred.model.predict(np.array([pred.featurizer.transform_mol(m) for m in mols]))
 
     def predict_all(self, mols: list[Chem.Mol]) -> dict[str, np.ndarray]:
         """logS from every model, keyed by model id."""
@@ -237,12 +247,11 @@ class Zoo:
 
         if not mols:
             return {i: np.zeros(0) for i in MODEL_IDS}
-        F = v2_feature_matrix(mols)
-        p = self.v2.predict_members(F)
-        out = {"v2": p["consensus"], "v1": self.base.model.predict(np.array([self.base.featurizer.transform_mol(m) for m in mols])),
+        p = self.v2.predict_members(v2_feature_matrix(mols))
+        out = {"consensus": p["consensus"], "chemist": self._tree(self.base, mols), "v1": self._tree(self.v1, mols),
                "delaney": np.array([delaney_one(m) for m in mols])}
-        out.update({f"v2-{n}": p[n] for n in MEMBERS})
-        return out
+        out.update({f"zoo-{n}": p[n] for n in MEMBERS})
+        return {i: np.asarray(out[i], dtype=float) for i in MODEL_IDS}
 
     def predict(self, model_id: str, mols: list[Chem.Mol]) -> np.ndarray:
         """logS from one model."""
@@ -250,20 +259,20 @@ class Zoo:
 
         if not mols:
             return np.zeros(0)
+        if model_id == "chemist":
+            return self._tree(self.base, mols)
         if model_id == "v1":
-            return self.base.model.predict(np.array([self.base.featurizer.transform_mol(m) for m in mols]))
+            return self._tree(self.v1, mols)
         if model_id == "delaney":
             return np.array([delaney_one(m) for m in mols])
         p = self.v2.predict_members(v2_feature_matrix(mols))
-        return p["consensus" if model_id == "v2" else model_id.removeprefix("v2-")]
+        return p["consensus" if model_id == "consensus" else model_id.removeprefix("zoo-")]
 
     def _metric_key(self, model_id: str) -> str:
-        return {"v2": "consensus", "v1": "v1", "delaney": "delaney"}.get(model_id, model_id.removeprefix("v2-"))
+        return model_id.removeprefix("zoo-")
 
     def half_widths(self, model_id: str) -> dict[str, float]:
         """90% error range for familiar ("in") and unfamiliar ("out") molecules, from cross-validation."""
-        if model_id == "v1":
-            return self.base.conformal["q"]
         k = self._metric_key(model_id)
         s = self.metrics["splits"]
         return {"in": s["random"]["models"][k]["q90_cv"], "out": s["scaffold"]["models"][k]["q90_cv"]}
@@ -277,7 +286,7 @@ class Zoo:
                   for split in ("random", "scaffold")}
             out.append({"id": mid, "name": fa if lang == "fa" else en, "name_en": en,
                         "description": dfa if lang == "fa" else den, "default": mid == DEFAULT_MODEL,
-                        "explains_atoms": mid == "v1", "test": sc})
+                        "explains_atoms": mid == BASE_MODEL, "has_referee": mid == BASE_MODEL, "test": sc})
         return out
 
     def label(self, model_id: str, lang: str = "en") -> str:
@@ -295,14 +304,20 @@ class ModelView:
     """Looks like a ``Predictor`` but predicts with the chosen model.
 
     Everything that does not depend on the model (training-data lookups, similarity,
-    the SHAP explanation) is passed through to SoluAI v1.0.
+    the SHAP explanation) is passed through to the main model (``models/LATEST``).
+    For the main model itself the referee's per-molecule range and confidence are kept;
+    other models get a fixed 90% range from cross-validation and no confidence label.
     """
 
     def __init__(self, zoo: Zoo, model_id: str) -> None:
         self.zoo, self.model_id, self.base = zoo, model_id, zoo.base
-        hw = zoo.half_widths(model_id)
-        self.conformal = {**self.base.conformal, "q": {"in": hw["in"], "out": hw["out"]}}
-        self.version = self.base.version if model_id == "v1" else f"{model_id} (zoo 2.0.0)"
+        self.is_base = model_id == BASE_MODEL
+        if self.is_base:
+            self.conformal = self.base.conformal
+        else:
+            hw = zoo.half_widths(model_id)
+            self.conformal = {**self.base.conformal, "q": {"in": hw["in"], "out": hw["out"]}}
+        self.version = self.base.version if self.is_base else f"{model_id} (zoo 2.0.0)"
 
     def __getattr__(self, name):  # training_set, training_fps, measured, shap_values, featurizer ...
         return getattr(self.base, name)
@@ -319,7 +334,12 @@ class ModelView:
     def predict_many(self, smiles: list[str]) -> np.ndarray:
         return self.zoo.predict(self.model_id, [Chem.MolFromSmiles(s) for s in smiles])
 
-    def domain(self, mol: Chem.Mol, k: int = 3) -> dict:
-        d = self.base.domain(mol, k)
+    def domain(self, mol: Chem.Mol, k: int = 3, pred: float | None = None) -> dict:
+        if self.is_base:
+            return self.base.domain(mol, k, pred=pred)
+        # The referee judges the main model's errors, not this model's: skip it (pass a dummy prediction).
+        d = self.base.domain(mol, k, pred=0.0)
+        for key in ("expected_error", "confidence"):
+            d.pop(key, None)
         d["half_width"] = self.conformal["q"]["in" if d["max_similarity"] >= self.conformal["threshold"] else "out"]
         return d

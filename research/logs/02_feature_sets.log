@@ -1,0 +1,14 @@
+random    base(desc14+fp1024)          CV 0.834  test RMSE 0.844 R2 0.864 within1 0.818
+random    rdkit217                     CV 0.817  test RMSE 0.799 R2 0.878 within1 0.833
+random    rdkit217+fp1024              CV 0.804  test RMSE 0.795 R2 0.880 within1 0.834
+random    rdkit217+count2048           CV 0.804  test RMSE 0.803 R2 0.877 within1 0.837
+random    rdkit217+maccs               CV 0.813  test RMSE 0.801 R2 0.878 within1 0.841
+random    rdkit217+maccs+count2048     CV 0.805  test RMSE 0.795 R2 0.880 within1 0.840
+scaffold  base(desc14+fp1024)          CV 0.947  test RMSE 1.013 R2 0.787 within1 0.738
+scaffold  rdkit217                     CV 0.920  test RMSE 0.970 R2 0.804 within1 0.752
+scaffold  rdkit217+fp1024              CV 0.906  test RMSE 0.948 R2 0.813 within1 0.760
+scaffold  rdkit217+count2048           CV 0.908  test RMSE 0.942 R2 0.816 within1 0.762
+scaffold  rdkit217+maccs               CV 0.913  test RMSE 0.947 R2 0.814 within1 0.765
+scaffold  rdkit217+maccs+count2048     CV 0.902  test RMSE 0.935 R2 0.819 within1 0.760
+
+[exited with code 0]

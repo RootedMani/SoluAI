@@ -6,9 +6,11 @@ Steps:
 1. clean both datasets;
 2. for each dataset (AqSolDB, ESOL) and each split type (random, scaffold):
    tune every model with 5-fold cross-validation on the training part only,
-   then score it ONCE on the held-out test part;
-3. check the 90 % confidence intervals on the test sets;
-4. train the final model on all of AqSolDB and save it with its metadata;
+   then score it ONCE on the held-out test part. The last model in each table is
+   **SoluAI v2**: robust boosting on the extended features (the "chemist") plus
+   the trust model (the "referee"), see docs/algorithm.md;
+3. check the 90 % confidence intervals and the confidence labels on the test sets;
+4. train the final model (SoluAI v2) on all of AqSolDB and save it with its metadata;
 5. write results/metrics.json, results/metrics.md and results/report.json.
 """
 
@@ -36,20 +38,66 @@ from .baselines import delaney_matrix, delaney_predict
 from .config import config_hash, load_config
 from .data import RAW, build_clean_datasets
 from .evaluate import metrics
-from .features import DESCRIPTOR_NAMES, PRETTY, Featurizer
+from .features import DESCRIPTOR_NAMES, EXTRA_DESCRIPTOR_NAMES, FAMILIES, PRETTY, Featurizer, family
 from .models import make_model
 from .splits import cv_splitter, random_split, scaffold_split
-from .uncertainty import ConformalByDomain, max_similarity
+from .uncertainty import (ConformalByDomain, TrustModel, conformal_quantile, max_similarity, tanimoto_matrix,
+                          trust_report, trust_signals)
 
 log = logging.getLogger("soluai.train")
 FEATURE_SETS = ["desc", "fp", "desc+fp"]
+V2 = "SoluAI v2"          # row name of the new algorithm in the result tables
+V2_FEATURES = "rdkit+fp"
 
 
 # ----------------------------------------------------------------------------- helpers
-def column_slice(kind: str, n_bits: int) -> slice:
-    """Which columns of the full desc+fp matrix belong to a feature set."""
-    n_desc = len(DESCRIPTOR_NAMES)
-    return {"desc": slice(0, n_desc), "fp": slice(n_desc, n_desc + n_bits), "desc+fp": slice(0, n_desc + n_bits)}[kind]
+def column_slice(kind: str, n_bits: int) -> np.ndarray:
+    """Which columns of the full matrix (14 descriptors | extended descriptors | fingerprint) a feature set uses."""
+    n_desc, n_extra = len(DESCRIPTOR_NAMES), len(EXTRA_DESCRIPTOR_NAMES)
+    desc, fp = np.arange(n_desc), np.arange(n_desc + n_extra, n_desc + n_extra + n_bits)
+    return {"desc": desc, "fp": fp, "desc+fp": np.r_[desc, fp], V2_FEATURES: np.arange(n_desc + n_extra + n_bits)}[kind]
+
+
+def make_trust(cfg: dict) -> TrustModel:
+    """An unfitted trust model (the "referee") with the settings from the config file."""
+    t = cfg["uncertainty"]["trust"]
+    return TrustModel(coverage=cfg["uncertainty"]["coverage"], k=t["neighbours"], floor=t["floor"],
+                      tiers=dict(t["tiers"]), seed=cfg["seed"])
+
+
+def fit_trust(cfg: dict, X: np.ndarray, y: np.ndarray, runs: list[tuple[np.ndarray, list]], n_bits: int):
+    """Fit the referee on out-of-fold predictions.
+
+    ``runs`` is a list of ``(out-of-fold predictions, folds)``: one cross-validation in the
+    benchmark, two (scaffold folds and random folds) for the final model, so that the referee
+    sees both "new skeleton" and "close cousin" situations. For the training molecules,
+    neighbours are only taken from *other* folds, exactly like a molecule the model never saw.
+
+    Returns ``(trust, cross-fitted sigma per run, neighbour error per molecule, signal function)``.
+    """
+    j = {n: i for i, n in enumerate(DESCRIPTOR_NAMES)}
+    bits = X[:, column_slice("fp", n_bits)]
+    n = len(y)
+    nb_err = np.mean([np.abs(oof - y) for oof, _ in runs], axis=0)   # how wrong the model was on each molecule
+    trust = make_trust(cfg)
+
+    def signals(sim: np.ndarray, pred: np.ndarray, Xq: np.ndarray) -> np.ndarray:
+        return trust_signals(sim, y, nb_err, pred, Xq[:, j["MolLogP"]], Xq[:, j["MolWt"]], Xq[:, j["HeavyAtomCount"]], trust.k)
+
+    base = tanimoto_matrix(bits, bits)
+    S, target = [], []
+    for oof, folds in runs:
+        sims = base.copy()
+        for _, va in folds:
+            sims[np.ix_(va, va)] = -1.0
+        S.append(signals(sims, oof, X))
+        target.append(np.abs(oof - y))
+    # Both copies of a molecule stay in the same referee fold, so its sigma is always honest.
+    ref_folds = [(np.concatenate([tr + r * n for r in range(len(runs))]), np.concatenate([va + r * n for r in range(len(runs))]))
+                 for tr, va in runs[0][1]]
+    sigma = trust.fit(np.vstack(S), np.concatenate(target), ref_folds)
+    return (trust, sigma.reshape(len(runs), n), nb_err,
+            lambda Xq, pred: signals(tanimoto_matrix(Xq[:, column_slice("fp", n_bits)], bits), pred, Xq))
 
 
 def cross_validate(kind: str, params: dict, X: np.ndarray, y: np.ndarray, folds, seed: int) -> tuple[list[float], np.ndarray]:
@@ -177,6 +225,24 @@ def run_experiments(name: str, df: pd.DataFrame, cfg: dict, X_all: np.ndarray, f
         for label, (_, fs, params, p, oof) in best_by_model.items():
             preds[f"{label} ({fs})"] = p
 
+        # SoluAI v2, part 1 (the "chemist"): robust boosting on the extended feature set.
+        Xtr2, Xte2 = X_all[tr], X_all[te]
+        best2 = random_search("lgbm", cfg["search"]["soluai_v2"], cfg["search"]["n_iter"]["soluai_v2"], Xtr2, ytr, folds, seed)
+        p_v2 = make_model("lgbm", best2["params"], seed).fit(Xtr2, ytr).predict(Xte2)
+        record(V2, V2_FEATURES, (best2["cv_rmse"], best2["cv_sd"]), p_v2, best2["params"])
+        preds[f"{V2} ({V2_FEATURES})"] = p_v2
+
+        # SoluAI v2, part 2 (the "referee"): adaptive 90 % ranges and confidence labels.
+        trust, _, _, new_signals = fit_trust(cfg, Xtr2, ytr, [(best2["oof"], folds)], n_bits)
+        hw_v2 = trust.half_width(new_signals(Xte2, p_v2))
+        groups = df["group"].to_numpy()[te]
+        reliable = np.isin(groups, cfg["uncertainty"]["trust"]["reliable_groups"])
+        trust_rep = trust_report(yte, p_v2, hw_v2, trust, reliable if reliable.any() else None)
+        q_fixed = conformal_quantile(np.abs(best2["oof"] - ytr), cfg["uncertainty"]["coverage"])
+        trust_rep["fixed_width"] = {"half_width": round(q_fixed, 3),
+                                    "coverage": round(float((np.abs(p_v2 - yte) <= q_fixed).mean()), 3)}
+        log.info("%s %s trust: %s", name, split, {k: trust_rep[k] for k in ("all", "tiers", "fixed_width")})
+
         # Uncertainty check on the test set with the best LightGBM (chosen by CV, not by test!).
         _, fs, params, p_lgb, oof = best_by_model["LightGBM"]
         thr = cfg["uncertainty"]["domain_similarity_threshold"]
@@ -198,6 +264,8 @@ def run_experiments(name: str, df: pd.DataFrame, cfg: dict, X_all: np.ndarray, f
             "predictions": {k: np.round(v, 3).tolist() for k, v in preds.items()},
             "y_test": np.round(yte, 3).tolist(),
             "similarity_test": np.round(sim_te, 3).tolist(),
+            "half_width_v2": np.round(hw_v2, 3).tolist(),
+            "trust": trust_rep,
             "uncertainty": {
                 "model": f"LightGBM ({fs})",
                 "half_width_in": round(conf.q["in"], 3), "half_width_out": round(conf.q["out"], 3),
@@ -225,10 +293,9 @@ def fit_delaney_refit_from(D: np.ndarray, y: np.ndarray):
 def train_final(df: pd.DataFrame, cfg: dict, X_all: np.ndarray, fps: list, rows: list[dict]) -> dict:
     """Train the deployed model on all of AqSolDB and save it with metadata."""
     seed, n_bits = cfg["seed"], cfg["features"]["morgan_bits"]
-    lgb_scaffold = [r for r in rows if r["dataset"] == "aqsoldb" and r["split"] == "scaffold" and r["model"] == "LightGBM"]
-    best = min(lgb_scaffold, key=lambda r: r["cv_rmse"])
+    best = next(r for r in rows if r["dataset"] == "aqsoldb" and r["split"] == "scaffold" and r["model"] == V2)
     fs, params = best["features"], best["params"]
-    log.info("Final model: LightGBM on %s with %s", fs, params)
+    log.info("Final model: %s on %s with %s", V2, fs, params)
     X = X_all[:, column_slice(fs, n_bits)]
     y = df["logS"].to_numpy()
     smiles = df["smiles"].tolist()
@@ -239,6 +306,15 @@ def train_final(df: pd.DataFrame, cfg: dict, X_all: np.ndarray, fps: list, rows:
     sim = fold_similarities(fps, folds)
     conf = ConformalByDomain(cfg["uncertainty"]["domain_similarity_threshold"], cfg["uncertainty"]["coverage"])
     conf.fit(np.abs(oof - y), sim)
+    # The referee: learns from the same honest out-of-fold errors how big the error usually is.
+    # For the final model it studies two exams: the scaffold folds above ("new skeleton") and
+    # random folds ("close cousins exist"), because visitors type both kinds of molecules.
+    random_folds = cv_splitter("random", cfg["split"]["cv_folds"], seed, smiles)
+    _, oof_random = cross_validate("lgbm", params, X, y, random_folds, seed)
+    trust, sigma_oof, nb_err, _ = fit_trust(cfg, X, y, [(oof, folds), (oof_random, random_folds)], n_bits)
+    hw_oof = trust.q * sigma_oof
+    tier_share = {exam: {t: round(float(np.mean([trust.tier(h) == t for h in hw])), 3) for t in ("high", "medium", "low")}
+                  for exam, hw in zip(("scaffold", "random"), hw_oof)}
 
     model = make_model("lgbm", params, seed).fit(X, y)
     feat = Featurizer(fs, cfg["features"]["morgan_radius"], n_bits)
@@ -252,6 +328,8 @@ def train_final(df: pd.DataFrame, cfg: dict, X_all: np.ndarray, fps: list, rows:
         "radius": cfg["features"]["morgan_radius"],
         "n_bits": n_bits,
         "feature_names": feat.names,
+        "extra_names": feat.extra_names,
+        "trust": trust,
         "conformal": {"threshold": conf.threshold, "coverage": conf.coverage, "q": conf.q},
         "descriptor_ranges": {n: [float(desc[:, i].min()), float(desc[:, i].max())] for i, n in enumerate(DESCRIPTOR_NAMES)},
         "version": cfg["model_version"],
@@ -266,7 +344,9 @@ def train_final(df: pd.DataFrame, cfg: dict, X_all: np.ndarray, fps: list, rows:
         for d in ["MolLogP", "TPSA", "MolMR"] if d in names
     }
     joblib.dump(bundle, version_dir / "model.joblib", compress=3)
-    df[["name", "smiles", "logS"]].to_csv(version_dir / "training_set.csv", index=False)
+    # The referee needs to know how wrong the model was on each training molecule when it had not seen it.
+    df[["name", "smiles", "logS"]].assign(oof_abs_err=np.round(nb_err, 3)).to_csv(
+        version_dir / "training_set.csv", index=False)
 
     mean_abs = np.abs(contrib).mean(0)
     order = np.argsort(-mean_abs)[:15]
@@ -274,13 +354,17 @@ def train_final(df: pd.DataFrame, cfg: dict, X_all: np.ndarray, fps: list, rows:
     labels = bit_labels(smiles, feat, fp_bits)
     importance = [
         {"feature": names[i],
-         "label": PRETTY.get(names[i]) or f"Fragment {labels.get(int(names[i][3:]), names[i])}",
+         "label": PRETTY.get(names[i]) or (f"Fragment {labels.get(int(names[i][3:]), names[i])}"
+                                            if names[i].startswith("FP_") else f"{names[i]} ({FAMILIES[family(names[i])].lower()})"),
          "mean_abs_shap": round(float(mean_abs[i]), 4)}
         for i in order
     ]
     fp_cols = [i for i, n in enumerate(names) if n.startswith("FP_")]
     group_importance = {
-        "descriptors": round(float(mean_abs[[i for i, n in enumerate(names) if not n.startswith("FP_")]].sum()), 3),
+        "descriptors": round(float(mean_abs[[i for i, n in enumerate(names) if n in PRETTY]].sum()), 3),
+        **{FAMILIES[f]: round(float(mean_abs[[i for i, n in enumerate(names)
+                                              if n not in PRETTY and not n.startswith("FP_") and family(n) == f]].sum()), 3)
+           for f in FAMILIES if feat.extra_names},
         "fingerprint fragments": round(float(mean_abs[fp_cols].sum()), 3) if fp_cols else 0.0,
     }
     # SHAP dependence for the chemistry sanity check.
@@ -295,10 +379,16 @@ def train_final(df: pd.DataFrame, cfg: dict, X_all: np.ndarray, fps: list, rows:
 
     meta = {
         "name": "SoluAI", "version": cfg["model_version"], "trained_on": date.today().isoformat(),
-        "algorithm": "LightGBM gradient boosting", "features": fs, "params": params,
+        "algorithm": "SoluAI v2: robust LightGBM boosting (chemist) + trust model (referee)",
+        "features": fs, "n_features": len(names), "params": params,
         "n_training_molecules": int(len(y)), "config_hash": config_hash(cfg),
         "data_sha256": json.loads((RAW / "SOURCES.json").read_text()) if (RAW / "SOURCES.json").exists() else None,
         "conformal": bundle["conformal"],
+        "trust": {"q": round(trust.q, 4), "floor": trust.floor, "neighbours": trust.k, "tiers": trust.tiers,
+                  "tier_share_out_of_fold": tier_share,
+                  "median_half_width_out_of_fold": {"scaffold": round(float(np.median(hw_oof[0])), 3),
+                                                    "random": round(float(np.median(hw_oof[1])), 3)},
+                  "random_cv_rmse": metrics(y, oof_random)["rmse"]},
         "scaffold_cv_rmse_of_choice": best["cv_rmse"],
         "packages": {"python": platform.python_version(), "rdkit": rdkit.__version__, "lightgbm": lightgbm.__version__,
                      "scikit-learn": sklearn.__version__, "numpy": np.__version__, "pandas": pd.__version__,
@@ -322,21 +412,40 @@ def dataset_overlap(aq: pd.DataFrame, esol: pd.DataFrame) -> dict:
 
 
 # ----------------------------------------------------------------------------- reporting
-def write_markdown(rows: list[dict], path) -> None:
-    """Human-readable metrics table."""
-    lines = []
+def write_markdown(rows: list[dict], extras: dict, path) -> None:
+    """Human-readable metrics tables."""
+    lines = ["RMSE and MAE are in log units. *Within ×10* is the share of test molecules predicted within one",
+             "log unit, i.e. within a factor of 10 of the measured solubility.", ""]
+    pct = lambda v: "–" if v is None else f"{100 * v:.1f}%"  # noqa: E731
     for ds in ["aqsoldb", "esol"]:
         for split in ["random", "scaffold"]:
             sub = [r for r in rows if r["dataset"] == ds and r["split"] == split]
             if not sub:
                 continue
-            lines += [f"### {ds.upper() if ds == 'esol' else 'AqSolDB'} - {split} split "
-                      f"(train {sub[0]['n_train']}, test {sub[0]['n_test']})", "",
-                      "| Model | Features | CV RMSE (mean ± sd) | Test RMSE | Test MAE | Test R² |",
-                      "|---|---|---|---|---|---|"]
+            title = f"{ds.upper() if ds == 'esol' else 'AqSolDB'} - {split} split"
+            lines += [f"### {title} (train {sub[0]['n_train']}, test {sub[0]['n_test']})", "",
+                      "| Model | Features | CV RMSE (mean ± sd) | Test RMSE | Test MAE | Test R² | Within ×10 |",
+                      "|---|---|---|---|---|---|---|"]
             for r in sub:
-                lines.append(f"| {r['model']} | {r['features']} | {r['cv_rmse']:.3f} ± {r['cv_rmse_sd']:.3f} | "
-                             f"{r['test_rmse']:.3f} | {r['test_mae']:.3f} | {r['test_r2']:.3f} |")
+                name = f"**{r['model']}**" if r["model"] == V2 else r["model"]
+                lines.append(f"| {name} | {r['features']} | {r['cv_rmse']:.3f} ± {r['cv_rmse_sd']:.3f} | "
+                             f"{r['test_rmse']:.3f} | {r['test_mae']:.3f} | {r['test_r2']:.3f} | {pct(r.get('test_within_1'))} |")
+            lines.append("")
+            t = extras.get(ds, {}).get(split, {}).get("trust")
+            if not t:
+                continue
+            lines += [f"**{V2} on this test set, by confidence label** (90% range: prediction ± q·σ, q = {t['q']}; "
+                      f"a fixed-width range would be ± {t['fixed_width']['half_width']} with {pct(t['fixed_width']['coverage'])} coverage)", "",
+                      "| Test molecules | Share | RMSE | R² | Within ×10 | Inside their 90% range | Mean half-width |",
+                      "|---|---|---|---|---|---|---|"]
+            parts = [("All", t["all"])] + [(f"{k.capitalize()} confidence", v) for k, v in t["tiers"].items()]
+            parts += [("Measured 2+ times, labs agree", t.get("reliable_measurements")),
+                      ("Measured once (or labs disagree)", t.get("single_measurements"))]
+            for label, v in parts:
+                if v:
+                    r2 = "–" if v["r2"] is None else f"{v['r2']:.3f}"
+                    lines.append(f"| {label} | {pct(v['share'])} | {v['rmse']:.3f} | {r2} | {pct(v['within_1'])} | "
+                                 f"{pct(v['coverage'])} | ± {v['mean_half_width']:.2f} |")
             lines.append("")
     path.write_text("\n".join(lines))
 
@@ -365,7 +474,7 @@ def main(argv: list[str] | None = None) -> None:
     t0 = time.time()
 
     data = build_clean_datasets(cfg)
-    full = Featurizer("desc+fp", cfg["features"]["morgan_radius"], cfg["features"]["morgan_bits"])
+    full = Featurizer(V2_FEATURES, cfg["features"]["morgan_radius"], cfg["features"]["morgan_bits"])
     X, fps = {}, {}
     for name, df in data.items():
         X[name] = full.transform(df["smiles"])
@@ -390,7 +499,7 @@ def main(argv: list[str] | None = None) -> None:
     (RESULTS_DIR / "metrics.json").write_text(json.dumps(
         {"results": rows, "esol_overlap": overlap, "final_model": final["meta"], "final_oof": final["oof_rmse"],
          "cleaning": cleaning}, indent=2))
-    write_markdown(rows, RESULTS_DIR / "metrics.md")
+    write_markdown(rows, extras, RESULTS_DIR / "metrics.md")
     report = {"splits": extras, "importance": final["importance"], "group_importance": final["group_importance"],
               "dependence": final["dependence"], "shap_trend_correlation": final["shap_trend_correlation"]}
     (RESULTS_DIR / "report.json").write_text(json.dumps(report))

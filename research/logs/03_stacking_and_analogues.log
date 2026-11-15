@@ -1,0 +1,12 @@
+random    lgbm       CV 0.804 test 0.795 R2 0.880
+random    svr_tani   CV 1.107 test 1.126 R2 0.759
+random    svr_desc   CV 0.879 test 0.853 R2 0.861
+random    et         CV 0.849 test 0.826 R2 0.870
+random    STACK {'lgbm': np.float64(0.67), 'svr_tani': np.float64(0.07), 'svr_desc': np.float64(0.18), 'et': np.float64(0.11)} CV 0.795 test 0.788 R2 0.882 within1 0.844 within0.5 0.624
+random    STACK+ANALOGUE best(0.823428138522243, 0.7, 3, 1.0, 10) test 0.804 R2 0.877 within1 0.838
+scaffold  lgbm       CV 0.906 test 0.948 R2 0.813
+scaffold  svr_tani   CV 1.654 test 1.386 R2 0.601
+scaffold  svr_desc   CV 1.112 test 1.094 R2 0.751
+scaffold  et         CV 0.996 test 1.032 R2 0.779
+scaffold  STACK {'lgbm': np.float64(0.72), 'svr_tani': np.float64(0.08), 'svr_desc': np.float64(0.2), 'et': np.float64(0.1)} CV 0.898 test 0.944 R2 0.815 within1 0.762 within0.5 0.481
+scaffold  STACK+ANALOGUE best(0.901729053097409, 0.7, 3, 1.0, 5) test 0.954 R2 0.811 within1 0.758

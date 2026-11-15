@@ -60,3 +60,21 @@ def test_invalid_smiles_raises():
 ])
 def test_cleaning_rules(smiles, reason):
     assert standardize(smiles)[1] == reason
+
+
+def test_extended_feature_vector():
+    """Model v2: 14 descriptors + every other RDKit descriptor + fingerprint."""
+    from soluai.features import EXTRA_DESCRIPTOR_NAMES, FAMILIES, family
+
+    f = Featurizer("rdkit+fp")
+    n = 14 + len(EXTRA_DESCRIPTOR_NAMES) + 1024
+    assert len(f.names) == n and len(set(f.names)) == n
+    assert f.names[:14] == DESCRIPTOR_NAMES and f.names[-1] == "FP_1023"
+    X = f.transform(["CCO", "c1ccccc1", "CC(=O)Oc1ccccc1C(=O)O"])
+    assert X.shape == (3, n)
+    # The first 14 columns and the fingerprint are exactly the v1 features.
+    assert np.array_equal(X[:, :14], Featurizer("desc").transform(["CCO", "c1ccccc1", "CC(=O)Oc1ccccc1C(=O)O"]))
+    assert np.array_equal(X[:, -1024:], Featurizer("fp").transform(["CCO", "c1ccccc1", "CC(=O)Oc1ccccc1C(=O)O"]))
+    assert np.all(np.abs(X[np.isfinite(X)]) <= 1e6)
+    assert {family(name) for name in EXTRA_DESCRIPTOR_NAMES} <= set(FAMILIES)
+    assert family("SlogP_VSA2") == "surface" and family("fr_ester") == "groups" and family("Chi1v") == "shape"

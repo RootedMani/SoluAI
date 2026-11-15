@@ -14,21 +14,32 @@ responsible for it:
 * H-bond donors / acceptors -> the N and O atoms that donate / accept;
 * aromatic features -> aromatic atoms; rotatable bonds -> their atoms; ...
 
-Effects that belong to the whole molecule (overall size, fragments that are
-*absent*) are not drawn on atoms; they are listed separately.
+Model v2 also uses about 200 extended descriptors. They are shared the same way
+wherever a descriptor belongs to particular atoms:
+
+* surface-area families (``SlogP_VSA3``, ``PEOE_VSA6`` ...) are "the surface of
+  all atoms whose oiliness / charge / ... lies in one range" -> those atoms;
+* functional-group counts (``fr_ester`` ...) -> the atoms of that group;
+* shape, branching and charge-pattern indices describe the whole molecule.
+
+Effects that belong to the whole molecule (overall size, shape, fragments that
+are *absent*) are not drawn on atoms; they are listed separately.
 Blue atoms raise solubility, red atoms lower it.
 """
 
 from __future__ import annotations
 
+import bisect
+from functools import lru_cache
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
 from rdkit import Chem
-from rdkit.Chem import Lipinski, rdMolDescriptors
+from rdkit.Chem import Fragments, Lipinski, MolSurf, rdMolDescriptors, rdPartialCharges
 from rdkit.Chem.Draw import rdMolDraw2D
+from rdkit.Chem.EState import EState, EState_VSA
 
-from .features import DESCRIPTOR_NAMES, PRETTY, descriptors
+from .features import DESCRIPTOR_NAMES, FAMILIES, PRETTY, descriptors, family
 from .groups import GROUPS_FA, find_groups
 
 if TYPE_CHECKING:
@@ -62,6 +73,69 @@ def _atom_sets(mol: Chem.Mol) -> dict[str, list[int]]:
     }
 
 
+@lru_cache(maxsize=1)
+def _fragment_patterns() -> dict[str, Chem.Mol]:
+    """SMARTS pattern of each RDKit functional-group descriptor (``fr_...``)."""
+    out = {}
+    with open(Fragments.defaultPatternFileName, encoding="utf-8") as fh:
+        for line in fh:
+            parts = line.rstrip("\n").split("\t")
+            if len(parts) >= 3 and parts[0].startswith("fr_"):
+                patt = Chem.MolFromSmarts(parts[2])
+                if patt is not None:
+                    out[parts[0]] = patt
+    return out
+
+
+#: Surface-area families: descriptor prefix -> (which per-atom property, bin edges).
+_VSA_BINS = {"SlogP_VSA": ("logp", MolSurf.logpBins), "SMR_VSA": ("mr", MolSurf.mrBins),
+             "PEOE_VSA": ("charge", MolSurf.chgBins), "EState_VSA": ("estate", EState_VSA.estateBins),
+             "VSA_EState": ("area", EState_VSA.vsaBins)}
+
+
+def extended_atom_sets(mol: Chem.Mol, names: list[str]) -> dict[str, list[int]]:
+    """Atoms 'responsible' for each extended descriptor (missing key = whole-molecule descriptor).
+
+    ``SlogP_VSA3`` is the surface area of the atoms whose logP contribution falls in the
+    third range, so those atoms get its effect; ``fr_ester`` belongs to the ester atoms.
+    An empty list means the group or range does not occur in this molecule.
+    """
+    out: dict[str, list[int]] = {}
+    props: dict[str, np.ndarray] = {}
+
+    def prop(kind: str) -> np.ndarray:
+        if kind not in props:
+            if kind in ("logp", "mr"):
+                c = np.array(rdMolDescriptors._CalcCrippenContribs(mol))
+                props["logp"], props["mr"] = c[:, 0], c[:, 1]
+            elif kind == "charge":
+                rdPartialCharges.ComputeGasteigerCharges(mol)
+                props[kind] = np.array([a.GetDoubleProp("_GasteigerCharge") for a in mol.GetAtoms()])
+            elif kind == "estate":
+                props[kind] = np.array(EState.EStateIndices(mol))
+            else:
+                props[kind] = np.array(list(rdMolDescriptors._CalcLabuteASAContribs(mol)[0]))
+        return props[kind]
+
+    hetero_no = [a.GetIdx() for a in mol.GetAtoms() if a.GetSymbol() in ("N", "O")]
+    for name in names:
+        if name.startswith("fr_"):
+            patt = _fragment_patterns().get(name)
+            if patt is not None:
+                out[name] = sorted({i for m in mol.GetSubstructMatches(patt) for i in m})
+        elif name == "NOCount":
+            out[name] = hetero_no
+        elif name == "NHOHCount":
+            out[name] = [i for i in hetero_no if mol.GetAtomWithIdx(i).GetTotalNumHs() > 0]
+        else:
+            for prefix, (kind, bins) in _VSA_BINS.items():
+                if name.startswith(prefix) and name[len(prefix):].isdigit():
+                    k = int(name[len(prefix):]) - 1
+                    out[name] = [i for i, v in enumerate(prop(kind)) if np.isfinite(v) and bisect.bisect_right(bins, v) == k]
+                    break
+    return out
+
+
 def atom_weights(predictor: "Predictor", mol: Chem.Mol, shap: np.ndarray) -> tuple[np.ndarray, dict[str, float]]:
     """Share SHAP values among atoms.
 
@@ -70,10 +144,13 @@ def atom_weights(predictor: "Predictor", mol: Chem.Mol, shap: np.ndarray) -> tup
     """
     n = mol.GetNumAtoms()
     w = np.zeros(n)
-    wide: dict[str, float] = {"Overall size": 0.0, "Compared with the average molecule": 0.0,
+    wide: dict[str, float] = {"Overall size": 0.0, "Shape and charge pattern": 0.0,
+                              "Compared with the average molecule": 0.0,
                               "Fragments not present": 0.0, "Other": 0.0}
     names = predictor.feature_names
     sets = _atom_sets(mol)
+    extra = [n for n in names if n not in PRETTY and not n.startswith("FP_")]
+    extra_sets = extended_atom_sets(mol, extra)
     crippen = np.array(rdMolDescriptors._CalcCrippenContribs(mol))
     per_atom = {"MolLogP": crippen[:, 0], "MolMR": crippen[:, 1],
                 "TPSA": np.array(rdMolDescriptors._CalcTPSAContribs(mol))}
@@ -84,6 +161,16 @@ def atom_weights(predictor: "Predictor", mol: Chem.Mol, shap: np.ndarray) -> tup
             continue
         if name in SIZE_FEATURES:
             wide["Overall size"] += s
+        elif name not in PRETTY:
+            # Extended descriptor (model v2).
+            idx = extra_sets.get(name)
+            if idx:
+                w[idx] += s / len(idx)
+            elif idx is not None:          # a group / surface type this molecule does not have
+                wide["Fragments not present"] += s
+            else:
+                fam = family(name)
+                wide["Overall size" if fam == "size" else "Shape and charge pattern" if fam in ("shape", "charge") else "Other"] += s
         elif name in per_atom:
             # Each atom gets slope * (its own contribution), and the remainder is
             # shared evenly so the atom shares add up exactly to the SHAP value.
@@ -298,14 +385,21 @@ def analyze(predictor: "Predictor", mol: Chem.Mol, lang: str = "en") -> dict[str
     logS = predictor.predict_mol(mol)
     shap, base = predictor.shap_values(mol)
     weights, wide = atom_weights(predictor, mol, shap)
-    dom = predictor.domain(mol)
+    dom = predictor.domain(mol, pred=logS)
     desc = dict(zip(DESCRIPTOR_NAMES, descriptors(mol)))
     mw = desc["MolWt"]
 
     # Top features for the bar chart: descriptors individually, fingerprint fragments grouped.
     names = predictor.feature_names
     contributions = [{"feature": PRETTY[n], "key": n, "value": round(float(desc[n]), 3), "shap": round(float(shap[j]), 3)}
-                     for j, n in enumerate(names) if not n.startswith("FP_")]
+                     for j, n in enumerate(names) if n in PRETTY]
+    # Extended descriptors (model v2) are summed by family: one bar each.
+    fam_sum: dict[str, float] = {}
+    for j, n in enumerate(names):
+        if n not in PRETTY and not n.startswith("FP_"):
+            fam_sum[family(n)] = fam_sum.get(family(n), 0.0) + float(shap[j])
+    contributions += [{"feature": FAMILIES[f], "key": f"family_{f}", "value": None, "shap": round(v, 3)}
+                      for f, v in fam_sum.items()]
     fp_idx = [j for j, n in enumerate(names) if n.startswith("FP_")]
     if fp_idx:
         present = predictor.featurizer.fingerprint_with_info(mol)[1]

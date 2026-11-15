@@ -40,7 +40,7 @@ def test_consensus_is_the_weighted_average(zoo):
     mols = [Chem.MolFromSmiles(s) for s in MOLS]
     p = zoo.predict_all(mols)
     w = zoo.v2.weights
-    assert np.allclose(p["v2"], sum(w[n] * p[f"v2-{n}"] for n in MEMBERS))
+    assert np.allclose(p["consensus"], sum(w[n] * p[f"zoo-{n}"] for n in MEMBERS))
     assert abs(sum(w.values()) - 1) < 0.05
 
 
@@ -58,31 +58,32 @@ def test_one_model_equals_its_column_in_predict_all(zoo):
 
 
 def test_view_behaves_like_a_predictor(zoo):
-    v = zoo.view("v2-svr")
+    v = zoo.view("zoo-svr")
     mol = Chem.MolFromSmiles("CCO")
     assert isinstance(v.predict_mol(mol), float)
     assert v.domain(mol)["half_width"] in (v.conformal["q"]["in"], v.conformal["q"]["out"])
     assert v.measured(mol)  # passes through to v1.0's training data
-    assert zoo.view("v2-svr") is v
+    assert zoo.view("zoo-svr") is v
 
 
 def test_model_info_has_honest_scores(zoo):
     info = {m["id"]: m for m in zoo.info()}
-    assert info["v2"]["default"] and info["v1"]["explains_atoms"]
-    assert info["v2"]["test"]["random"]["r2"] > info["v1"]["test"]["random"]["r2"] > info["delaney"]["test"]["random"]["r2"]
+    assert info["consensus"]["default"] and info["chemist"]["explains_atoms"] and not info["v1"]["explains_atoms"]
+    for m in ("consensus", "chemist", "v1"):
+        assert info[m]["test"]["random"]["r2"] > info["delaney"]["test"]["random"]["r2"] + 0.1
 
 
 # ---------------------------------------------------------------- quiz levels
 @pytest.mark.parametrize("level", list(lab.LEVELS))
 def test_quiz_levels_respect_their_gap(zoo, level):
-    q = lab.quiz(zoo.view("v2"), n=6, level=level, seed=1, zoo=zoo)
+    q = lab.quiz(zoo.view("consensus"), n=6, level=level, seed=1, zoo=zoo)
     assert q["level"] == level and len(q["rounds"]) >= 4
     for r in q["rounds"]:
         a, b = r["molecules"]
         assert abs(a["measured"] - b["measured"]) >= lab.LEVELS[level]["gap"] - 1e-9
         assert r["answer"] == int(b["measured"] > a["measured"])
         assert set(r["model_answers"]) == set(MODEL_IDS)
-        assert r["model_answers"]["v2"] == r["model_answer"]
+        assert r["model_answers"]["consensus"] == r["model_answer"]
 
 
 def test_expert_pairs_look_alike(predictor, zoo):
@@ -93,14 +94,14 @@ def test_expert_pairs_look_alike(predictor, zoo):
 
 
 def test_easy_is_easier_than_hard(zoo):
-    gap = lambda lv: np.mean([r["gap"] for s in range(3) for r in lab.quiz(zoo.view("v2"), 8, lv, seed=s, zoo=zoo)["rounds"]])  # noqa: E731
+    gap = lambda lv: np.mean([r["gap"] for s in range(3) for r in lab.quiz(zoo.view("consensus"), 8, lv, seed=s, zoo=zoo)["rounds"]])  # noqa: E731
     assert gap("easy") > gap("medium") and gap("hard") > gap("expert")
 
 
 # ---------------------------------------------------------------- API
 def test_models_endpoint(client):
     r = client.get("/api/models").json()
-    assert r["default"] == "v2" and [m["id"] for m in r["models"]] == MODEL_IDS
+    assert r["default"] == "consensus" and [m["id"] for m in r["models"]] == MODEL_IDS
 
 
 def test_predict_with_a_chosen_model(client):
@@ -110,7 +111,7 @@ def test_predict_with_a_chosen_model(client):
     rows = {m["id"]: m["logS"] for m in b["models"]}
     assert set(rows) == set(MODEL_IDS)
     assert b["logS"] == rows["delaney"] and a["logS"] == rows["v1"]
-    assert b["explained_by"]["id"] == "v1" and b["explained_by"]["logS"] == rows["v1"]
+    assert b["explained_by"]["id"] == "chemist" and b["explained_by"]["logS"] == rows["chemist"]
     assert b["interval"][0] < b["logS"] < b["interval"][1]
     assert b["agreement"]["spread"] >= 0
 
@@ -120,9 +121,26 @@ def test_unknown_model_is_rejected(client):
 
 
 def test_other_endpoints_take_a_model(client):
-    assert client.get("/api/quiz?n=3&level=medium&model=v2-mlp").json()["rounds"]
-    assert client.get("/api/quiz?n=3&level=expert&model=v2-cat").json()["level"] == "expert"
-    b = client.post("/api/batch", json={"queries": ["ethanol", "hexane"], "model": "v2-svr"}).json()
+    assert client.get("/api/quiz?n=3&level=medium&model=zoo-mlp").json()["rounds"]
+    assert client.get("/api/quiz?n=3&level=expert&model=zoo-cat").json()["level"] == "expert"
+    b = client.post("/api/batch", json={"queries": ["ethanol", "hexane"], "model": "zoo-svr"}).json()
     assert b["n_ok"] == 2
-    assert client.get("/api/series?model=v2-huber").json()["series"]
-    assert client.post("/api/suggest", json={"query": "naphthalene", "model": "v2-lgbm"}).status_code == 200
+    assert client.get("/api/series?model=zoo-huber").json()["series"]
+    assert client.post("/api/suggest", json={"query": "naphthalene", "model": "zoo-lgbm"}).status_code == 200
+
+
+def test_v1_is_the_real_v1_and_chemist_is_latest(zoo, predictor):
+    assert zoo.v1.version.startswith("1.") and zoo.base is predictor
+    mol = Chem.MolFromSmiles("CCO")
+    p = zoo.predict_all([mol])
+    assert abs(p["chemist"][0] - predictor.predict_mol(mol)) < 1e-9
+    assert abs(p["v1"][0] - zoo.v1.predict_mol(mol)) < 1e-9
+
+
+def test_only_the_main_model_gets_a_confidence_label(client):
+    base = client.post("/api/predict", json={"query": "caffeine", "model": "chemist"}).json()
+    other = client.post("/api/predict", json={"query": "caffeine", "model": "zoo-svr"}).json()
+    assert base["domain"].get("confidence") in ("high", "medium", "low")
+    assert "confidence" not in other["domain"]
+    lo, hi = other["interval"]
+    assert abs((hi - lo) / 2 - other["domain"]["half_width"]) < 0.02

@@ -127,15 +127,16 @@ is right about 85% of the time, so it is the fair opponent.
 A picker on Predict, Compare, Trends, Batch and Quiz (remembered in the browser) chooses which model
 answers. The Predict and Compare pages also show **what every model predicts**, with each model's
 held-out test R², and say how much the models agree. The Model page lists all models with their
-scores. Models: SoluAI v2 consensus (default), SoluAI v1.0, LightGBM, robust LightGBM (Huber),
-CatBoost, a similarity SVR, a neural network, and Delaney's formula. The atom colours and SHAP bars
-always explain SoluAI v1.0.
+scores. Models: the consensus of 5 zoo models (default), SoluAI v2.0 (chemist + referee, the main
+model), SoluAI v1.0, LightGBM, robust LightGBM (Huber), CatBoost, a similarity SVR, a neural network,
+and Delaney's formula. The atom colours, SHAP bars and the confidence label always belong to
+SoluAI v2.0; other models get a fixed 90% range from cross-validation.
 
 ## 8. Batch (`lab.batch`)
 
 Paste a list or load a CSV, get a table, download a CSV. Each row has logS, the 90% range, g/L,
-class, pharmacopoeia term, lab value, classic formula, and whether the molecule is familiar to the
-model. Salts in the list are answered by the rules. Batch mode never uses the internet.
+class, pharmacopoeia term, lab value, classic formula, and the model's confidence label (high /
+medium / low). Salts in the list are answered by the rules. Batch mode never uses the internet.
 
 ## 9. Persian and right-to-left
 
@@ -158,11 +159,11 @@ All of this is also a JSON API (interactive docs at `/docs`):
 
 ```
 GET  /api/models                                                 every model + test scores
-POST /api/predict        {"query": "caffeine", "lang": "en", "model": "v2"}   molecule or salt
+POST /api/predict        {"query": "caffeine", "lang": "en", "model": "consensus"}   molecule or salt
 POST /api/compare        {"queries": ["ethanol", "hexane"]}
 POST /api/suggest        {"query": "toluene"}
 POST /api/batch          {"queries": ["CCO", "NaCl", ...]}       up to 200
 GET  /api/series         GET /api/quiz?n=8&level=expert&model=v1  GET /api/household
-Every prediction endpoint takes "model": v2 (default), v1, v2-lgbm, v2-huber, v2-cat, v2-svr, v2-mlp, delaney.
+Every prediction endpoint takes "model": consensus (default), chemist, v1, zoo-lgbm, zoo-huber, zoo-cat, zoo-svr, zoo-mlp, delaney.
 GET  /api/salts          GET /api/salts/Ag/Cl                    POST /api/salts/mix
 ```

@@ -3,9 +3,15 @@
 This document explains the whole machine-learning pipeline in simple language. The code
 for each step is named in brackets.
 
+Since version 2.0 the deployed model is the **Chemist–Referee algorithm**: a prediction model
+plus a second model that judges how reliable each prediction is. This page gives the overview;
+the design, the maths and the results are in [algorithm.md](algorithm.md).
+
 ```
  raw data ──► cleaning ──► features ──► split ──► train + tune (CV) ──► test once ──► final model ──► website
  (data/raw)   (data.py)   (features.py) (splits.py)    (train.py)        (evaluate.py)  (models/)     (web/)
+                                                  │
+                                                  └──► referee: how reliable is each prediction? (uncertainty.py)
 ```
 
 Everything is run by **one command**:
@@ -60,7 +66,15 @@ switches on one of 1,024 bits. The result is a barcode of all the small fragment
 molecule, such as "C–OH attached to a ring" or "C=O next to N". The model can then learn things
 like "this fragment tends to increase solubility".
 
-We test three feature sets: **descriptors only**, **fingerprint only**, and **both**.
+### Extended descriptors (204 more numbers, model v2)
+
+RDKit can compute about 200 further descriptors from the 2D structure: the molecule's surface
+split into oily / polar / charged parts, counts of 85 functional groups, shape and branching
+indices, partial charges. One by one they are harder to read, so SoluAI groups them into six
+families when it explains a prediction ([algorithm.md §2](algorithm.md#2-part-1-the-chemist)).
+
+We test four feature sets: **descriptors only**, **fingerprint only**, **both** (the v1 model),
+and **everything** (`rdkit+fp`: 14 + 204 + 1,024 = 1,242 numbers, the v2 model).
 
 ## Step 3: Splitting: the exam must contain new questions (`splits.py`)
 
@@ -87,8 +101,8 @@ them **without touching the test set**, we use **5-fold cross-validation** on th
 2. train on 4 parts and score on the 5th; repeat 5 times so every part is scored once;
 3. average the 5 scores (the **CV score**).
 
-We try a fixed number of random settings (12 for LightGBM, 6 for the slower random forest)
-and keep the one with the best CV score. For the scaffold split, the folds are also
+We try a fixed number of random settings (12 for LightGBM, 6 for the slower random forest, 5 for
+the larger v2 model) and keep the one with the best CV score. For the scaffold split, the folds are also
 scaffold-based. Only then is the chosen model trained on the whole training part and
 scored **once** on the test set.
 
@@ -124,6 +138,14 @@ The individual trees' mistakes partly cancel, like asking many people and taking
 LightGBM is a fast, popular implementation. It also computes exact **SHAP** explanations
 (step 7) cheaply, which is why we deploy it on the website.
 
+### SoluAI v2: the chemist (robust boosting)
+
+The deployed model is LightGBM again, with two changes: it reads all 1,242 features, and it uses
+the **Huber loss**. With the usual squared error, one lab value that is wrong by 4 log units pulls
+16 times harder than one that is wrong by 1. With the Huber loss, errors larger than a threshold
+count only in proportion to their size, so a few bad measurements cannot bend the model. This
+matters because solubility data are noisy (see step 6).
+
 ### Why no neural network?
 
 Graph neural networks can be slightly better on some benchmarks, but they are much harder to
@@ -151,31 +173,49 @@ about 0.5 log units between labs, so even a perfect model could not reach RMSE =
 prediction = average prediction (≈ −3.0) + SHAP(logP) + SHAP(TPSA) + … + SHAP(fragment bits)
 ```
 
-* On the website, the **bar chart** shows the biggest SHAP values.
+* On the website, the **bar chart** shows the biggest SHAP values. The 14 readable descriptors
+  get one bar each; the 204 extended descriptors are added up into one bar per family
+  ("Surface area by polarity", "Functional-group counts", "Shape and branching"…).
 * The **atom colours** share each feature's SHAP value among the atoms responsible for it:
   a fragment's atoms, each atom's own logP or polar-surface contribution, the O/N atoms that
-  donate or accept hydrogen bonds, the aromatic atoms, and so on. Blue = raises solubility,
-  red = lowers it.
+  donate or accept hydrogen bonds, the aromatic atoms, and so on. An extended descriptor that
+  belongs to particular atoms (a surface-area range, a functional group) is shared among those
+  atoms; shape and charge-pattern indices belong to the whole molecule and are listed beside the
+  picture. Blue = raises solubility, red = lowers it.
 * The **plain-language sentence** finds functional groups (–OH, –COOH, benzene ring…) with
   pattern matching and reads off whether their atoms were mostly blue or red.
 
 ## Step 8: Knowing when to be unsure (`uncertainty.py`)
 
-* **"Outside the model's experience":** we compare the new molecule's fingerprint with every
-  training molecule (Tanimoto similarity: 0 = nothing in common, 1 = identical). If even the
-  closest one is below 0.30 similar, or a descriptor is outside the training range, we warn the user.
-* **90% range (conformal prediction):** we collect the model's errors on molecules it had not
-  seen (from cross-validation) and find the error size that 90% of them stay below. The range is
-  prediction ± that size, computed separately for familiar and unfamiliar molecules. We check on
-  the test set that about 90% of true values really fall inside their range.
+A prediction without an error bar is half an answer. SoluAI v2 has a second model for this, the
+**referee**.
+
+1. During cross-validation every training molecule is predicted by a model that has not seen it.
+   That gives thousands of honest examples of how wrong the chemist can be.
+2. For each molecule we compute nine **trust signals**: how similar its 5 closest training
+   molecules are, whether their lab values agree with each other, how wrong the chemist was on
+   them, whether the prediction agrees with them, and the molecule's size and oiliness.
+3. The referee (a small LightGBM model) learns to predict the *size of the error* from these
+   signals. Its answer is the expected error σ.
+4. **90% range (conformal prediction):** we find the factor `q` such that 90% of the honest errors
+   are smaller than `q·σ`. The range is `prediction ± q·σ`: narrow for easy molecules, wide for
+   hard ones. We check on the test sets that about 90% of true values really fall inside.
+5. **Confidence label:** high (range ± 0.8 or narrower), medium (up to ± 1.4) or low.
+
+The website still shows the similarity to the closest training molecule (Tanimoto similarity:
+0 = nothing in common, 1 = identical) and warns when a descriptor is outside the training range.
+Version 1 used only that similarity, with one fixed range for "familiar" and one for "unfamiliar"
+molecules; the benchmark still reports it for comparison.
 
 ## Step 9: The final model and versioning
 
-After the benchmark, LightGBM with the best settings from the scaffold-split search is trained
-on **all** cleaned AqSolDB molecules and saved in `models/soluai-v1.0.0/`:
+After the benchmark, the v2 chemist with the best settings from the scaffold-split search is
+trained on **all** cleaned AqSolDB molecules, the referee is fitted on its cross-validation errors
+(scaffold folds and random folds together), and everything is saved in `models/soluai-v2.0.0/`:
 
-* `model.joblib`: the trained model and its settings
-* `training_set.csv`: the molecules it learned from (used for "closest molecules")
+* `model.joblib`: the chemist, the referee and their settings
+* `training_set.csv`: the molecules it learned from, with the chemist's honest error on each
+  (used for "closest molecules" and for the trust signals)
 * `metadata.json`: version, date, settings, config fingerprint, data checksums, package versions
   and cross-validation scores
 
