@@ -30,6 +30,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   const q = new URLSearchParams(location.search).get("q");
   if (q) { input.value = q; run(q); }
 });
+// A different model was chosen: show the same molecule again.
+document.addEventListener("modelchange", () => { if (CURRENT && CURRENT.kind === "organic") run(CURRENT.query); });
 
 async function run(query) {
   const out = document.getElementById("result");
@@ -75,22 +77,22 @@ function threeAnswers(r) {
   let verdict;
   if (m) {
     const ea = Math.abs(r.logS - m.logS), ec = Math.abs(c - m.logS);
-    const who = ea <= ec ? T("SoluAI is closer", "SoluAI نزدیک‌تر است") : T("the classic formula is closer here", "این‌جا فرمول کلاسیک نزدیک‌تر است");
-    verdict = T(`Compared with the lab value, SoluAI is off by ${ea.toFixed(2)} and the classic formula by ${ec.toFixed(2)} log units: ${who}. `,
-      `در مقایسه با مقدار آزمایشگاهی، خطای SoluAI برابر ${ea.toFixed(2)} و خطای فرمول کلاسیک ${ec.toFixed(2)} واحد لگاریتمی است: ${who}. `) +
+    const who = ea <= ec ? T("the model is closer", "مدل نزدیک‌تر است") : T("the classic formula is closer here", "این‌جا فرمول کلاسیک نزدیک‌تر است");
+    verdict = T(`Compared with the lab value, ${r.model.name} is off by ${ea.toFixed(2)} and the classic formula by ${ec.toFixed(2)} log units: ${who}. `,
+      `در مقایسه با مقدار آزمایشگاهی، خطای ${r.model.name} برابر ${ea.toFixed(2)} و خطای فرمول کلاسیک ${ec.toFixed(2)} واحد لگاریتمی است: ${who}. `) +
       T("Honest note: this molecule was in the training data, so the model has seen its answer before.",
         "نکتهٔ صادقانه: این مولکول در داده‌های آموزشی بوده، پس مدل پاسخ آن را قبلاً دیده است.") +
       (m.exact ? "" : T(" (The lab value is for the same molecule with its 3D shape ignored.)", " (مقدار آزمایشگاهی برای همین مولکول بدون در نظر گرفتن شکل سه‌بعدی است.)"));
   } else {
     const d = Math.abs(r.logS - c);
-    verdict = T(`No lab value for this molecule in our data. SoluAI and the classic formula differ by ${d.toFixed(2)} log units${d >= 1 ? " - a big gap, so treat the number with care." : "."}`,
-      `برای این مولکول مقدار آزمایشگاهی در داده‌های ما نیست. اختلاف SoluAI و فرمول کلاسیک ${d.toFixed(2)} واحد لگاریتمی است${d >= 1 ? "؛ اختلاف بزرگی است، پس با احتیاط به عدد نگاه کنید." : "."}`);
+    verdict = T(`No lab value for this molecule in our data. ${r.model.name} and the classic formula differ by ${d.toFixed(2)} log units${d >= 1 ? " - a big gap, so treat the number with care." : "."}`,
+      `برای این مولکول مقدار آزمایشگاهی در داده‌های ما نیست. اختلاف ${r.model.name} و فرمول کلاسیک ${d.toFixed(2)} واحد لگاریتمی است${d >= 1 ? "؛ اختلاف بزرگی است، پس با احتیاط به عدد نگاه کنید." : "."}`);
   }
   return `<div class="card fade-in" style="margin-top:20px">
     <div class="card-title"><h3>${T("Three answers to the same question", "سه پاسخ به یک پرسش")}</h3><span class="small muted">logS</span></div>
     <div class="tri">
       ${m ? row(T("Measured in the lab", "اندازه‌گیری آزمایشگاهی"), esc(prettyName(m.name)), m.logS) : ""}
-      ${row("SoluAI", T("machine learning, 2026", "یادگیری ماشین"), r.logS)}
+      ${row(esc(r.model.name), T("machine learning, 2026", "یادگیری ماشین"), r.logS)}
       ${row(T("Classic formula", "فرمول کلاسیک"), T("Delaney's equation, 2004", "معادلهٔ دلانی، 2004"), c)}
     </div>
     <p class="small muted" style="margin:14px 0 0">${verdict}</p>
@@ -116,6 +118,7 @@ function renderResult(r) {
         </div>
       </div>
       <div class="mol-paper" id="mol-svg">${r.svg_explained}</div>
+      ${r.model.id === "v1" ? "" : `<p class="small muted" style="margin:10px 0 0">${T(`Colours: SoluAI v1.0's explanation (v1.0 predicts ${num(r.explained_by.logS)}).`, `رنگ‌ها: توضیح SoluAI v1.0 (پیش‌بینی v1.0: ‎${num(r.explained_by.logS)}‎).`)}</p>`}
       <div class="legend" style="margin-top:12px">
         <span><i style="background:var(--up)"></i>${T("raises solubility", "انحلال‌پذیری را بالا می‌برد")}</span>
         <span><i style="background:var(--down)"></i>${T("lowers solubility", "انحلال‌پذیری را پایین می‌آورد")}</span>
@@ -128,7 +131,7 @@ function renderResult(r) {
     </div>
 
     <div class="card">
-      <div class="kicker">${T("Predicted solubility in water (25 °C)", "انحلال‌پذیری پیش‌بینی‌شده در آب (25°C)")}</div>
+      <div class="kicker">${T("Predicted solubility in water (25 °C)", "انحلال‌پذیری پیش‌بینی‌شده در آب (25°C)")} · ${esc(r.model.name)}</div>
       <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:8px">
         <div class="big-number">${num(r.logS)}<small>log mol/L</small></div>
         ${badge(r.category)}
@@ -147,6 +150,7 @@ function renderResult(r) {
   </div>
 
   ${threeAnswers(r)}
+  ${everyModel(r)}
 
   <div class="grid grid-2 fade-in" style="margin-top:20px">
     <div class="card">
@@ -157,8 +161,9 @@ function renderResult(r) {
     <div class="card">
       <div class="card-title"><h3>${T("What pushed the prediction", "چه چیزی پیش‌بینی را جابه‌جا کرد")}</h3><span class="small muted">${T("SHAP, log units", "SHAP، واحد لگاریتمی")}</span></div>
       ${shapBars(r.contributions)}
-      <p class="small muted" style="margin-top:14px">${T(`Starts from the average molecule (${num(r.base_value)}); blue bars push solubility up, red bars push it down. They add up to ${num(r.logS)}.`,
-        `از مولکول میانگین (‎${num(r.base_value)}‎) شروع می‌شود؛ میله‌های آبی انحلال‌پذیری را بالا و میله‌های قرمز پایین می‌برند. جمع آن‌ها ‎${num(r.logS)}‎ می‌شود.`)}</p>
+      <p class="small muted" style="margin-top:14px">${T(`Starts from the average molecule (${num(r.base_value)}); blue bars push solubility up, red bars push it down. They add up to ${num(r.explained_by.logS)}.`,
+        `از مولکول میانگین (‎${num(r.base_value)}‎) شروع می‌شود؛ میله‌های آبی انحلال‌پذیری را بالا و میله‌های قرمز پایین می‌برند. جمع آن‌ها ‎${num(r.explained_by.logS)}‎ می‌شود.`)}</p>
+      ${explainNote(r)}
     </div>
   </div>
 
@@ -262,3 +267,38 @@ function loadIntoEditor() {
   if (pendingSmiles) EDITOR.readGenericMolecularInput(pendingSmiles); else EDITOR.reset();
   document.getElementById("draw-smiles").textContent = pendingSmiles;
 }
+
+/* ------------------------------------------------------------------ every model's answer */
+/* The atom colours and SHAP bars always come from SoluAI v1.0: say so when another model is chosen. */
+function explainNote(r) {
+  if (r.model.id === "v1") return "";
+  return `<p class="small muted" style="margin-top:8px">${T(`This explanation is from SoluAI v1.0, the only model that can be explained atom by atom. ${r.model.name} predicts ${num(r.logS)}.`,
+    `این توضیح از SoluAI v1.0 است؛ تنها مدلی که می‌توان سهم هر اتم را در آن توضیح داد. پیش‌بینی ${r.model.name} برابر ‎${num(r.logS)}‎ است.`)}</p>`;
+}
+
+function everyModel(r) {
+  const m = r.measured;
+  const row = (x) => `<div class="tri-row zoo-row ${x.id === r.model.id ? "chosen" : ""}" data-model="${x.id}" title="${T("Use this model", "استفاده از این مدل")}">
+      <span class="who">${esc(x.name)}<small class="ltr">${T("test", "آزمون")} R² ${x.test_r2.toFixed(2)}${m ? ` · ${T("off by", "خطا")} ${Math.abs(x.logS - m.logS).toFixed(2)}` : ""}</small></span>
+      <span class="tri-track"><span class="tri-dot" style="left:${pct(x.logS)}%"></span></span><span class="val ltr">${num(x.logS)}</span></div>`;
+  const a = r.agreement;
+  const verdict = a.spread <= 0.5
+    ? T(`The machine-learning models agree within ${a.spread.toFixed(2)} log units: a good sign.`, `مدل‌های یادگیری ماشین تا ${a.spread.toFixed(2)} واحد لگاریتمی با هم توافق دارند: نشانهٔ خوبی است.`)
+    : a.spread <= 1
+      ? T(`The models differ by up to ${a.spread.toFixed(2)} log units: the usual amount of disagreement.`, `مدل‌ها تا ${a.spread.toFixed(2)} واحد لگاریتمی با هم اختلاف دارند: اختلافی معمولی.`)
+      : T(`The models disagree by ${a.spread.toFixed(2)} log units (more than 10×). Treat any single number with care.`, `اختلاف مدل‌ها ${a.spread.toFixed(2)} واحد لگاریتمی است (بیش از ۱۰ برابر). به هیچ عدد تکی بیش از حد اعتماد نکنید.`);
+  return `<div class="card fade-in no-print-break" style="margin-top:20px" id="every-model">
+    <div class="card-title"><h3>${T("What every model predicts", "پیش‌بینی همهٔ مدل‌ها")}</h3><span class="small muted">${T("logS · click a row to use that model", "logS · برای انتخاب مدل روی ردیف کلیک کنید")}</span></div>
+    <div class="tri">
+      ${m ? `<div class="tri-row measured"><span class="who">${T("Measured in the lab", "اندازه‌گیری آزمایشگاهی")}<small>${esc(prettyName(m.name))}</small></span>
+        <span class="tri-track"><span class="tri-dot" style="left:${pct(m.logS)}%"></span></span><span class="val ltr">${num(m.logS)}</span></div>` : ""}
+      ${r.models.map(row).join("")}
+    </div>
+    <p class="small muted" style="margin:14px 0 0">${verdict} ${T("\"Test R²\" is each model's score on 1,718 molecules it never saw (1.00 would be perfect).",
+      "«R² آزمون» امتیاز هر مدل روی ۱۷۱۸ مولکولی است که هرگز ندیده (۱٫۰۰ یعنی بی‌نقص).")}</p>
+  </div>`;
+}
+document.addEventListener("click", (e) => {
+  const row = e.target.closest(".zoo-row");
+  if (row && row.dataset.model && row.dataset.model !== MODEL) setModel(row.dataset.model);
+});

@@ -18,7 +18,7 @@ Around the model there is a small chemistry toolkit ([details](docs/features.md)
 |---|---|
 | **Draw** a molecule, or type one of 225 offline names (English or Persian) | **Salts:** NaCl, AgCl, CaCO₃… answered with the textbook solubility rules, plus a "will a precipitate form?" mixing lab |
 | **Make it more soluble:** the model tries small edits and ranks them | **Trends:** solubility along seven homologous series, prediction vs lab |
-| **Quiz:** which one dissolves better? You vs the AI | **Batch:** up to 200 molecules from a list or CSV, results as CSV |
+| **Quiz:** which one dissolves better? 4 levels, pick your AI opponent, leaderboard of every model | **Batch:** up to 200 molecules from a list or CSV, results as CSV |
 | **Persian / English** interface with right-to-left layout | **Works offline** and prints a one-page PDF report |
 
 It is a real, trained machine-learning model (LightGBM gradient boosting on RDKit descriptors and
@@ -114,6 +114,29 @@ tables, including descriptor-only and fingerprint-only models and CV scores, are
   in the measurements themselves. See the [model card](docs/model_card.md) for limitations and
   real failure cases.
 
+
+### Version 2: choose your model (model zoo)
+
+Version 2 merged 13 public data sources (28,714 measurements, 8,589 molecules) and trained five
+different kinds of model. The website lets you **choose which model answers** (Predict, Compare,
+Trends, Batch, Quiz) and shows **what every model predicts** for the same molecule. When the models
+agree, trust the number more; when they disagree, less.
+
+| Model (same 1,718 unseen test molecules) | Random split R² / RMSE | Scaffold split R² / RMSE |
+|---|---|---|
+| **SoluAI v2 · consensus** (default; blends the five below) | **0.89 / 0.78** | **0.85 / 0.97** |
+| Gradient boosting (LightGBM) | 0.88 / 0.79 | 0.84 / 1.00 |
+| Robust boosting (Huber loss) | 0.88 / 0.80 | 0.84 / 1.00 |
+| CatBoost | 0.88 / 0.80 | 0.84 / 1.00 |
+| Neural network | 0.87 / 0.83 | 0.83 / 1.03 |
+| Similarity model (SVR) | 0.86 / 0.87 | 0.82 / 1.06 |
+| SoluAI v1.0 recipe | 0.87 / 0.84 | 0.82 / 1.05 |
+| Delaney's formula | 0.68 / 1.30 | 0.63 / 1.53 |
+
+Two labs measuring the same molecule agree only at R² ≈ 0.86, which limits every model. The
+atom-by-atom "Why?" explanation always comes from SoluAI v1.0 (the only model with exact SHAP
+values); the page says so when another model is chosen. Code: `src/soluai/zoo.py`; training:
+`python -m soluai.train_zoo`; the experiment behind it: [experiments/v2-consensus-stacking](experiments/v2-consensus-stacking/README.md).
 ## Project structure
 
 ```

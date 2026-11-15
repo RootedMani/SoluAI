@@ -107,10 +107,29 @@ are close to the measured ones (3.5 to 5.6×), usually a little flatter.
 
 ## 7. Quiz (`lab.quiz`)
 
-Two molecules whose **measured** solubilities differ by at least 1.5 log units (easy mode: the
-familiar list) or 1 log unit (hard mode: any small molecule in the data). You and the model both
-answer; the page keeps score. The model has an advantage because it saw these molecules in training,
-and the final screen says so.
+Two molecules whose **measured** solubilities differ; you and the model both answer. Four levels
+(`lab.LEVELS`):
+
+| Level | Molecules | Smallest gap |
+|---|---|---|
+| Easy | the familiar list | 2 log units (100×) |
+| Medium | the familiar list | 1 log unit (10×) |
+| Hard | any small molecule in the data | 1 log unit |
+| Expert | look-alike pairs (fingerprint similarity ≥ 0.45) | 0.7 log units (5×) |
+
+Your **opponent** is the model chosen in the picker. Every round also records every other model's
+answer, so the final screen shows a leaderboard. Honest note shown to players: the machine-learning
+models saw these molecules in training and win about 99% of rounds at every level; Delaney's formula
+is right about 85% of the time, so it is the fair opponent.
+
+## 7b. Choose a model (`zoo.py`)
+
+A picker on Predict, Compare, Trends, Batch and Quiz (remembered in the browser) chooses which model
+answers. The Predict and Compare pages also show **what every model predicts**, with each model's
+held-out test R², and say how much the models agree. The Model page lists all models with their
+scores. Models: SoluAI v2 consensus (default), SoluAI v1.0, LightGBM, robust LightGBM (Huber),
+CatBoost, a similarity SVR, a neural network, and Delaney's formula. The atom colours and SHAP bars
+always explain SoluAI v1.0.
 
 ## 8. Batch (`lab.batch`)
 
@@ -138,10 +157,12 @@ charts always stay left-to-right.
 All of this is also a JSON API (interactive docs at `/docs`):
 
 ```
-POST /api/predict        {"query": "caffeine", "lang": "en"}     molecule or salt
+GET  /api/models                                                 every model + test scores
+POST /api/predict        {"query": "caffeine", "lang": "en", "model": "v2"}   molecule or salt
 POST /api/compare        {"queries": ["ethanol", "hexane"]}
 POST /api/suggest        {"query": "toluene"}
 POST /api/batch          {"queries": ["CCO", "NaCl", ...]}       up to 200
-GET  /api/series         GET /api/quiz?n=8&level=easy            GET /api/household
+GET  /api/series         GET /api/quiz?n=8&level=expert&model=v1  GET /api/household
+Every prediction endpoint takes "model": v2 (default), v1, v2-lgbm, v2-huber, v2-cat, v2-svr, v2-mlp, delaney.
 GET  /api/salts          GET /api/salts/Ag/Cl                    POST /api/salts/mix
 ```

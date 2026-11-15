@@ -15,6 +15,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   drawAll();
   household();
 });
+document.addEventListener("DOMContentLoaded", zooTable);
+document.addEventListener("modelchange", () => { zooTable(); household(); });
 document.addEventListener("themechange", () => REP && drawAll());
 
 function bindSeg(id, fn) {
@@ -137,7 +139,7 @@ async function household() {
     const h = await api("/api/household");
     const err = (a, b) => `<span class="ltr">${Math.abs(a - b).toFixed(2)}</span>`;
     el.innerHTML = `<div class="table-wrap"><table><thead><tr><th>${T("Where you meet it", "کجا می‌بینیمش")}</th><th>${T("Substance", "ماده")}</th>
-      <th class="num">${T("Lab (logS)", "آزمایشگاه (logS)")}</th><th class="num">SoluAI</th><th class="num">${T("Classic formula", "فرمول کلاسیک")}</th><th>${T("Verdict", "نتیجه")}</th></tr></thead><tbody>${h.rows.map((r) => {
+      <th class="num">${T("Lab (logS)", "آزمایشگاه (logS)")}</th><th class="num">${esc(modelName(MODEL))}</th><th class="num">${T("Classic formula", "فرمول کلاسیک")}</th><th>${T("Verdict", "نتیجه")}</th></tr></thead><tbody>${h.rows.map((r) => {
         if (r.kind === "ionic") return `<tr><td>${esc(r.where)}</td><td>${esc(capitalize(r.name))} <span class="ltr muted">${esc(r.formula)}</span></td>
           <td class="num ltr">${r.measured_logS === null ? "–" : num(r.measured_logS)}</td><td class="num" colspan="2"><span class="pill">${T("solubility rules", "قواعد انحلال‌پذیری")}</span></td>
           <td><b class="verdict ${r.status}" style="font-size:1rem">${esc(r.status_label)}</b> ${r.agrees ? "✓" : ""}</td></tr>`;
@@ -146,7 +148,30 @@ async function household() {
           <td class="num ltr">${has ? num(r.measured) : "–"}</td><td class="num ltr"><b>${num(r.logS)}</b></td><td class="num ltr">${num(r.classic)}</td>
           <td class="small">${has ? T(`off by ${Math.abs(r.logS - r.measured).toFixed(2)}`, `خطا ${Math.abs(r.logS - r.measured).toFixed(2)}`) : T("no lab value in our data", "مقدار آزمایشگاهی نداریم")}</td></tr>`;
       }).join("")}</tbody></table></div>
-      <p class="note" style="margin:16px 0 0">${T(`On the ${h.n_compared} organic substances with a lab value, SoluAI is off by ${h.mean_abs_error_model} log units on average and the classic formula by ${h.mean_abs_error_classic}. Honest note: these molecules were part of the training data, so this is a sanity check, not an exam. The real exam is at the top of this page.`,
-        `برای ${h.n_compared} مادهٔ آلی که مقدار آزمایشگاهی دارند، میانگین خطای SoluAI برابر ${h.mean_abs_error_model} و خطای فرمول کلاسیک ${h.mean_abs_error_classic} واحد لگاریتمی است. نکتهٔ صادقانه: این مولکول‌ها در داده‌های آموزشی بوده‌اند؛ پس این یک آزمونِ سلامت است، نه امتحان واقعی. امتحان واقعی در بالای همین صفحه است.`)}</p>`;
+      <p class="note" style="margin:16px 0 0">${T(`On the ${h.n_compared} organic substances with a lab value, ${modelName(MODEL)} is off by ${h.mean_abs_error_model} log units on average and the classic formula by ${h.mean_abs_error_classic}. Honest note: these molecules were part of the training data, so this is a sanity check, not an exam. The real exam is at the top of this page.`,
+        `برای ${h.n_compared} مادهٔ آلی که مقدار آزمایشگاهی دارند، میانگین خطای ${modelName(MODEL)} برابر ${h.mean_abs_error_model} و خطای فرمول کلاسیک ${h.mean_abs_error_classic} واحد لگاریتمی است. نکتهٔ صادقانه: این مولکول‌ها در داده‌های آموزشی بوده‌اند؛ پس این یک آزمونِ سلامت است، نه امتحان واقعی. امتحان واقعی در بالای همین صفحه است.`)}</p>`;
+  } catch (err) { el.innerHTML = errorBox(err); }
+}
+
+/* Every selectable model with its held-out scores (random and scaffold split). */
+async function zooTable() {
+  const el = document.getElementById("zoo");
+  try {
+    const { models } = await loadModels();
+    if (!models.length) throw { message: T("Could not load the model list.", "فهرست مدل‌ها بارگذاری نشد.") };
+    const best = (k, split) => Math.max(...models.map((m) => m.test[split][k]));
+    const cell = (m, split, k, d = 2, pctv = false) => {
+      const v = m.test[split][k], top = k !== "rmse" && v === best(k, split);
+      return `<td class="num ltr">${top ? "<b>" : ""}${pctv ? Math.round(v * 100) + "%" : v.toFixed(d)}${top ? "</b>" : ""}</td>`;
+    };
+    el.innerHTML = `<div class="table-wrap"><table class="leader"><thead>
+      <tr><th>${T("Model", "مدل")}</th><th class="num" colspan="3">${T("Random split", "تقسیم تصادفی")}</th><th class="num" colspan="2">${T("New skeletons (scaffold)", "اسکلت‌های تازه")}</th><th></th></tr>
+      <tr><th></th><th class="num">R²</th><th class="num">RMSE</th><th class="num">${T("within ±1", "درون ±۱")}</th><th class="num">R²</th><th class="num">RMSE</th><th></th></tr></thead><tbody>
+      ${models.map((m) => `<tr class="${m.id === MODEL ? "me" : ""}"><td><b>${esc(m.name)}</b>${m.default ? ` <span class="pill accent">${T("default", "پیش‌فرض")}</span>` : ""}<div class="small muted" style="font-weight:400">${esc(m.description)}</div></td>
+        ${cell(m, "random", "r2")}${cell(m, "random", "rmse")}${cell(m, "random", "w1", 0, true)}${cell(m, "scaffold", "r2")}${cell(m, "scaffold", "rmse")}
+        <td>${m.id === MODEL ? `<span class="pill">${T("in use", "در حال استفاده")}</span>` : `<button class="btn ghost small" data-use="${m.id}">${T("Use", "انتخاب")}</button>`}</td></tr>`).join("")}
+      </tbody></table></div>`;
+    MODEL_LIST = models;
+    el.querySelectorAll("[data-use]").forEach((b) => { b.onclick = () => setModel(b.dataset.use); });
   } catch (err) { el.innerHTML = errorBox(err); }
 }
