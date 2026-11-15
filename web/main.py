@@ -26,8 +26,9 @@ sys.path.insert(0, str(ROOT / "src"))  # so `import soluai` works without instal
 
 from soluai import RESULTS_DIR, __version__, ionic, lab  # noqa: E402
 from soluai.common_molecules import COMMON, FA_CATEGORIES, SYNONYMS, fa_name  # noqa: E402
-from soluai.explain import analyze  # noqa: E402
-from soluai.predict import CATEGORIES, Predictor  # noqa: E402
+from soluai.explain import analyze, usp_term  # noqa: E402
+from soluai.predict import CATEGORIES, Predictor, category  # noqa: E402
+from soluai.zoo import DEFAULT_MODEL, MODEL_IDS, Zoo  # noqa: E402
 from soluai.resolve import InputError, resolve  # noqa: E402
 
 STATIC = Path(__file__).parent / "static"
@@ -45,10 +46,25 @@ def predictor() -> Predictor:
     return p
 
 
+@lru_cache(maxsize=1)
+def zoo() -> Zoo:
+    """All selectable models (SoluAI v1.0, the v2 models and Delaney's formula)."""
+    z = Zoo(predictor())
+    z.v2.load_all()
+    return z
+
+
+def view(model: str):
+    """A predictor that answers with the chosen model."""
+    return zoo().view(model)
+
+
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    """Load the model when the server starts, not on the first visitor's request."""
+    """Load the models when the server starts, not on the first visitor's request."""
     predictor()
+    zoo()
+    lab.warm_up(zoo())  # quiz pools etc., so the first quiz is fast
     yield
 
 
@@ -62,6 +78,8 @@ Query = Annotated[str, StringConstraints(strip_whitespace=True, max_length=300)]
 
 
 Lang = Literal["en", "fa"]
+ModelId = Literal[tuple(MODEL_IDS)]  # "v2", "v1", "v2-lgbm", ... see soluai/zoo.py
+QuizLevel = Literal["easy", "medium", "hard", "expert"]
 
 
 class PredictRequest(BaseModel):
@@ -69,6 +87,7 @@ class PredictRequest(BaseModel):
 
     query: Query = Field(..., examples=["ethanol", "CCO"])
     lang: Lang = "en"
+    model: ModelId = DEFAULT_MODEL
 
 
 class CompareRequest(BaseModel):
@@ -76,6 +95,7 @@ class CompareRequest(BaseModel):
 
     queries: list[Query] = Field(..., min_length=2, max_length=4)
     lang: Lang = "en"
+    model: ModelId = DEFAULT_MODEL
 
 
 class BatchRequest(BaseModel):
@@ -83,6 +103,7 @@ class BatchRequest(BaseModel):
 
     queries: list[Query] = Field(..., min_length=1, max_length=200)
     lang: Lang = "en"
+    model: ModelId = DEFAULT_MODEL
 
 
 class MixRequest(BaseModel):
@@ -123,11 +144,41 @@ def _error(err: InputError, query: str, lang: str = "en") -> HTTPException:
     return HTTPException(status_code=422, detail={"message": message, "hint": hint, "query": query})
 
 
-def predict_one(query: str, lang: str = "en") -> dict:
+def with_model(result: dict, mol, model: str, lang: str = "en") -> dict:
+    """Swap the headline numbers for the chosen model's, and add every model's answer.
+
+    The atom-by-atom explanation (SHAP) only exists for SoluAI v1.0, so it stays as it is and
+    ``explained_by`` says which model and value it explains.
+    """
+    z = zoo()
+    every = z.predict_all([mol])
+    v1 = float(every["v1"][0])
+    logS = float(every[model][0])
+    mw = result["mol_weight"]
+    dom = view(model).domain(mol)
+    hw = dom["half_width"]
+    result.update({
+        "logS": round(logS, 2), "interval": [round(logS - hw, 2), round(logS + hw, 2)],
+        "g_per_L": float(f"{(10 ** logS) * mw:.3g}"), "mg_per_L": float(f"{(10 ** logS) * mw * 1000:.3g}"),
+        "category": category(logS), "usp": usp_term((10 ** logS) * mw),
+        "domain": {**result["domain"], "half_width": hw},
+        "model": {"id": model, "name": z.label(model, lang)},
+        "explained_by": {"id": "v1", "name": z.label("v1", lang), "logS": round(v1, 2)},
+    })
+    rows = [{"id": i["id"], "name": i["name"], "logS": round(float(every[i["id"]][0]), 2),
+             "category": category(float(every[i["id"]][0])), "test_r2": i["test"]["random"]["r2"]}
+            for i in z.info(lang)]
+    ml = [r["logS"] for r in rows if r["id"] != "delaney"]
+    result["models"] = rows
+    result["agreement"] = {"min": min(ml), "max": max(ml), "spread": round(max(ml) - min(ml), 2)}
+    return result
+
+
+def predict_one(query: str, lang: str = "en", model: str = DEFAULT_MODEL) -> dict:
     """Resolve + analyse one query; raises HTTPException with a friendly message.
 
     Salts (NaCl, silver nitrate ...) are answered by the textbook solubility rules;
-    everything else goes to the machine-learning model.
+    everything else goes to the machine-learning models.
     """
     salt = ionic.analyze_text(query, lang)
     if salt:
@@ -136,7 +187,7 @@ def predict_one(query: str, lang: str = "en") -> dict:
         r = resolve(query)
     except InputError as err:
         raise _error(err, query, lang) from None
-    result = analyze(predictor(), r.mol, lang)
+    result = with_model(analyze(predictor(), r.mol, lang), r.mol, model, lang)
     name = (fa_name(r.name) if lang == "fa" else None) or r.name
     return {"query": query, "name": name, "name_en": r.name, "smiles": r.smiles, "source": r.source, **result}
 
@@ -145,7 +196,15 @@ def predict_one(query: str, lang: str = "en") -> dict:
 @app.get("/api/health")
 def health() -> dict:
     """Used by Render to check the service is up."""
-    return {"status": "ok", "model_version": predictor().version}
+    return {"status": "ok", "model_version": predictor().version, "models": MODEL_IDS, "default_model": DEFAULT_MODEL}
+
+
+@app.get("/api/models")
+def models(lang: Lang = "en") -> dict:
+    """Every model you can choose, with its held-out test scores."""
+    z = zoo()
+    return {"default": DEFAULT_MODEL, "models": z.info(lang),
+            "test_sizes": {k: z.metrics["splits"][k]["n_test"] for k in ("random", "scaffold")}}
 
 
 @app.get("/api/molecules")
@@ -163,7 +222,7 @@ def molecules(lang: Lang = "en") -> dict:
 @app.post("/api/predict")
 def predict(req: PredictRequest) -> dict:
     """Predict the solubility of one molecule and explain it (salts: solubility rules)."""
-    return predict_one(req.query, req.lang)
+    return predict_one(req.query, req.lang, req.model)
 
 
 @app.post("/api/compare")
@@ -172,7 +231,7 @@ def compare(req: CompareRequest) -> dict:
     out = []
     for q in req.queries:
         try:
-            out.append(predict_one(q, req.lang))
+            out.append(predict_one(q, req.lang, req.model))
         except HTTPException as exc:
             out.append({"query": q, "error": exc.detail})
     return {"results": out}
@@ -185,36 +244,36 @@ def suggest(req: PredictRequest) -> dict:
         r = resolve(req.query)
     except InputError as err:
         raise _error(err, req.query, req.lang) from None
-    return {"query": req.query, "name": r.name, "smiles": r.smiles, **lab.suggest(predictor(), r.mol, req.lang)}
+    return {"query": req.query, "name": r.name, "smiles": r.smiles, **lab.suggest(view(req.model), r.mol, req.lang)}
 
 
 @app.get("/api/series")
-def series(lang: Lang = "en") -> dict:
+def series(lang: Lang = "en", model: ModelId = DEFAULT_MODEL) -> dict:
     """Homologous series (alkanes, alcohols, acids ...): solubility against chain length."""
-    return _series(lang)
+    return _series(lang, model)
 
 
-@lru_cache(maxsize=2)
-def _series(lang: str) -> dict:
-    return lab.series(predictor(), lang)
+@lru_cache(maxsize=32)
+def _series(lang: str, model: str) -> dict:
+    return lab.series(view(model), lang)
 
 
 @app.get("/api/quiz")
-def quiz(n: int = 8, level: Literal["easy", "hard"] = "easy", lang: Lang = "en") -> dict:
-    """Rounds of "which one dissolves better?" built from measured values."""
-    return lab.quiz(predictor(), max(1, min(n, 15)), level, lang)
+def quiz(n: int = 8, level: QuizLevel = "easy", lang: Lang = "en", model: ModelId = DEFAULT_MODEL) -> dict:
+    """Rounds of "which one dissolves better?" built from measured values; ``model`` is your opponent."""
+    return lab.quiz(view(model), max(1, min(n, 15)), level, lang, zoo=zoo())
 
 
 @app.post("/api/batch")
 def batch(req: BatchRequest) -> dict:
     """Predict up to 200 molecules at once (offline names and SMILES only)."""
-    return lab.batch(predictor(), req.queries, req.lang)
+    return lab.batch(view(req.model), req.queries, req.lang)
 
 
 @app.get("/api/household")
-def household(lang: Lang = "en") -> dict:
+def household(lang: Lang = "en", model: ModelId = DEFAULT_MODEL) -> dict:
     """Everyday substances: measured value vs SoluAI vs the classic formula."""
-    return lab.household(predictor(), lang)
+    return lab.household(view(model), lang)
 
 
 @app.get("/api/salts")

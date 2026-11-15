@@ -21,6 +21,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   draw();
 });
 document.addEventListener("themechange", () => SERIES.length && draw());
+document.addEventListener("modelchange", async () => {
+  try { SERIES = (await api("/api/series")).series; draw(); } catch (err) { document.getElementById("plot").innerHTML = errorBox(err); }
+});
 
 function draw() {
   document.querySelectorAll("#series-chips .chip").forEach((c) => c.classList.toggle("active", active.has(c.dataset.k)));
@@ -28,9 +31,9 @@ function draw() {
   SERIES.forEach((s, i) => {
     if (!active.has(s.key)) return;
     const c = COLORS[i], pts = s.points;
-    traces.push({ type: "scatter", mode: "lines+markers", name: `${s.title} · SoluAI`, x: pts.map((p) => p.n), y: pts.map((p) => p.predicted),
+    traces.push({ type: "scatter", mode: "lines+markers", name: `${s.title} · ${modelName(MODEL)}`, x: pts.map((p) => p.n), y: pts.map((p) => p.predicted),
       text: pts.map((p) => p.name), customdata: pts.map((p) => p.smiles), line: { color: c, width: 3 }, marker: { size: 7, color: c },
-      hovertemplate: "<b>%{text}</b><br>SoluAI: %{y:.2f}<extra></extra>" });
+      hovertemplate: `<b>%{text}</b><br>${esc(modelName(MODEL))}: %{y:.2f}<extra></extra>` });
     const m = pts.filter((p) => p.measured !== null);
     traces.push({ type: "scatter", mode: "markers", name: `${s.title} · ${T("measured", "اندازه‌گیری‌شده")}`, x: m.map((p) => p.n), y: m.map((p) => p.measured),
       text: m.map((p) => p.name), customdata: m.map((p) => p.smiles),
@@ -54,7 +57,7 @@ function draw() {
     const fold = (sl) => (sl === null ? "–" : `${Number(Math.pow(10, -sl).toPrecision(2))}×`);
     return `<div class="card"><div class="kicker" style="color:${COLORS[i]}">${esc(s.title)} <span class="ltr">${esc(s.group)}</span></div>
       <div class="big-number" style="font-size:2.2rem;margin-top:6px">${fold(s.slope_predicted)}</div>
-      <div class="small muted">${T("less soluble for every extra CH₂ (SoluAI)", "کاهش انحلال‌پذیری با هر ‎CH₂‎ اضافه (SoluAI)")}</div>
+      <div class="small muted">${T(`less soluble for every extra CH₂ (${modelName(MODEL)})`, `کاهش انحلال‌پذیری با هر ‎CH₂‎ اضافه (${modelName(MODEL)})`)}</div>
       <div class="small" style="margin-top:8px">${T("Lab measurements say", "اندازه‌گیری‌ها می‌گویند")}: <b class="ltr">${fold(s.slope_measured)}</b></div></div>`;
   }).join("");
 }

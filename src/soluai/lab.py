@@ -165,30 +165,37 @@ def suggest(predictor: "Predictor", mol: Chem.Mol, lang: str = "en", top: int = 
 
 
 # ----------------------------------------------------------------------------- quiz
-@lru_cache(maxsize=2)
-def _quiz_pool(predictor: "Predictor", level: str) -> list[dict]:
-    """Molecules with a measured value: the familiar list (easy) or the whole dataset (hard)."""
-    pool = []
-    if level == "easy":
+#: Quiz levels: which molecules, the smallest gap between the two measured values (log units),
+#: and for "expert" a minimum similarity, so the two molecules look alike.
+LEVELS: dict[str, dict] = {
+    "easy":   {"pool": "familiar", "gap": 2.0, "similar": None},
+    "medium": {"pool": "familiar", "gap": 1.0, "similar": None},
+    "hard":   {"pool": "any", "gap": 1.0, "similar": None},
+    "expert": {"pool": "any", "gap": 0.7, "similar": 0.45},
+}
+
+
+@lru_cache(maxsize=4)
+def _quiz_pool(predictor: "Predictor", pool: str) -> list[dict]:
+    """Molecules with a measured value: the familiar list, or the whole dataset."""
+    out = []
+    if pool == "familiar":
         for name, (smi, _cat) in COMMON.items():
             mol = Chem.MolFromSmiles(smi)
             m = predictor.measured(mol)
             if m and m["exact"]:
-                pool.append({"name": name, "smiles": Chem.MolToSmiles(mol), "measured": m["logS"]})
-        return pool
+                out.append({"name": name, "smiles": Chem.MolToSmiles(mol), "measured": m["logS"], "row": None})
+        return out
     ts = predictor.training_set
-    for name, smi, logS in zip(ts["name"], ts["smiles"], ts["logS"]):
+    for i, (name, smi, logS) in enumerate(zip(ts["name"], ts["smiles"], ts["logS"])):
         name = str(name).strip()
         if 3 <= len(name) <= 28 and ";" not in name and 5 <= sum(c.isupper() or c in "cnos" for c in smi) <= 20:
-            pool.append({"name": name.replace("_", " "), "smiles": smi, "measured": round(float(logS), 2)})
-    return pool
+            out.append({"name": name.replace("_", " "), "smiles": smi, "measured": round(float(logS), 2), "row": i})
+    return out
 
 
-def quiz(predictor: "Predictor", n: int = 8, level: str = "easy", lang: str = "en", seed: int | None = None) -> dict:
-    """``n`` rounds of two molecules whose *measured* solubilities differ clearly."""
-    rng = random.Random(seed)
-    pool = _quiz_pool(predictor, "hard" if level == "hard" else "easy")
-    gap = 1.0 if level == "hard" else 1.5
+def _pairs(pool: list[dict], n: int, gap: float, rng: random.Random) -> list[list[dict]]:
+    """Random pairs whose measured values differ by at least ``gap``."""
     rounds, used, tries = [], set(), 0
     while len(rounds) < n and tries < 4000:
         tries += 1
@@ -197,26 +204,88 @@ def quiz(predictor: "Predictor", n: int = 8, level: str = "easy", lang: str = "e
             continue
         used.update([a["name"], b["name"]])
         rounds.append([a, b])
+    return rounds
+
+
+def _look_alike_pairs(predictor: "Predictor", pool: list[dict], n: int, gap: float, min_sim: float,
+                      rng: random.Random) -> list[list[dict]]:
+    """Pairs of molecules that look alike (fingerprint similarity >= ``min_sim``) but dissolve differently."""
+    from rdkit import DataStructs
+
+    fps = [predictor.training_fps[m["row"]] for m in pool]
+    order = list(range(len(pool)))
+    rng.shuffle(order)
+    rounds, used = [], set()
+    for i in order:
+        if len(rounds) >= n:
+            break
+        a = pool[i]
+        if a["name"] in used:
+            continue
+        sims = DataStructs.BulkTanimotoSimilarity(fps[i], fps)
+        cands = [j for j, s in enumerate(sims) if j != i and min_sim <= s < 0.999
+                 and abs(pool[j]["measured"] - a["measured"]) >= gap and pool[j]["name"] not in used
+                 and pool[j]["name"].lower() != a["name"].lower()]
+        if not cands:
+            continue
+        b = pool[rng.choice(cands)]
+        used.update([a["name"], b["name"]])
+        rounds.append([a, b] if rng.random() < 0.5 else [b, a])
+    return rounds
+
+
+def quiz(predictor: "Predictor", n: int = 8, level: str = "easy", lang: str = "en", seed: int | None = None,
+         zoo=None) -> dict:
+    """``n`` rounds of two molecules whose *measured* solubilities differ clearly.
+
+    ``predictor`` is the opponent. If a ``zoo`` is given, every other model's answer is
+    included too, so the website can show a leaderboard of all models.
+    """
+    level = level if level in LEVELS else "easy"
+    cfg = LEVELS[level]
+    rng = random.Random(seed)
+    base = getattr(predictor, "base", predictor)
+    pool = _quiz_pool(base, cfg["pool"])
+    if cfg["similar"]:
+        rounds = _look_alike_pairs(base, pool, n, cfg["gap"], cfg["similar"], rng)
+    else:
+        rounds = _pairs(pool, n, cfg["gap"], rng)
     flat = [m for pair in rounds for m in pair]
-    preds = predictor.predict_many([m["smiles"] for m in flat]) if flat else []
+    mols = [Chem.MolFromSmiles(m["smiles"]) for m in flat]
+    if zoo is not None:
+        every = zoo.predict_all(mols)
+        preds = every[predictor.model_id]
+    else:
+        every = {}
+        preds = predictor.predict_many([m["smiles"] for m in flat]) if flat else []
     out = []
     for i, pair in enumerate(rounds):
         items = []
         for j, m in enumerate(pair):
-            mol = Chem.MolFromSmiles(m["smiles"])
+            mol = mols[2 * i + j]
             display = (fa_name(m["name"]) if lang == "fa" else None) or m["name"]
-            items.append({"name": display, "query": m["name"] if level != "hard" else m["smiles"], "smiles": m["smiles"],
-                          "measured": m["measured"], "predicted": round(float(preds[2 * i + j]), 2),
+            items.append({"name": display, "query": m["name"] if cfg["pool"] == "familiar" else m["smiles"],
+                          "smiles": m["smiles"], "measured": m["measured"], "predicted": round(float(preds[2 * i + j]), 2),
                           "formula": rdMolDescriptors.CalcMolFormula(mol), "svg": draw_svg(mol, size=(300, 230))})
-        out.append({"molecules": items, "answer": int(items[1]["measured"] > items[0]["measured"]),
-                    "model_answer": int(items[1]["predicted"] > items[0]["predicted"])})
-    return {"level": "hard" if level == "hard" else "easy", "rounds": out}
+        answer = int(items[1]["measured"] > items[0]["measured"])
+        r = {"molecules": items, "answer": answer, "model_answer": int(items[1]["predicted"] > items[0]["predicted"]),
+             "gap": round(abs(items[0]["measured"] - items[1]["measured"]), 2)}
+        if every:
+            r["model_answers"] = {k: int(v[2 * i + 1] > v[2 * i]) for k, v in every.items()}
+        out.append(r)
+    return {"level": level, "levels": list(LEVELS), "rounds": out}
+
+
+def warm_up(zoo) -> None:
+    """Build the quiz pools in advance."""
+    for pool in ("familiar", "any"):
+        _quiz_pool(zoo.base, pool)
 
 
 # ----------------------------------------------------------------------------- batch
-def quick(predictor: "Predictor", mol: Chem.Mol) -> dict:
-    """The key numbers for one molecule, without the (slower) explanation."""
-    logS = predictor.predict_mol(mol)
+def quick(predictor: "Predictor", mol: Chem.Mol, logS: float | None = None) -> dict:
+    """The key numbers for one molecule, without the (slower) explanation (``logS``: already predicted)."""
+    logS = predictor.predict_mol(mol) if logS is None else float(logS)
     dom = predictor.domain(mol, k=1)
     mw = Descriptors.MolWt(mol)
     hw = dom["half_width"]
@@ -247,8 +316,12 @@ def batch(predictor: "Predictor", queries: list[str], lang: str = "en") -> dict:
         except InputError as err:
             rows.append({"query": q, "kind": "error", "error": err.message})
             continue
-        rows.append({"query": q, "kind": "organic", "name": r.name, "smiles": r.smiles, **quick(predictor, r.mol)})
+        rows.append({"query": q, "kind": "organic", "name": r.name, "smiles": r.smiles, "_mol": r.mol})
     ok = [r for r in rows if r["kind"] == "organic"]
+    # One call for all molecules: much faster than one call each.
+    preds = predictor.predict_many([r["smiles"] for r in ok]) if ok else []
+    for r, p in zip(ok, preds):
+        r.update(quick(predictor, r.pop("_mol"), p))
     return {"rows": rows, "n_ok": len(ok), "n_salts": sum(r["kind"] == "ionic" for r in rows),
             "n_failed": sum(r["kind"] == "error" for r in rows)}
 
@@ -271,7 +344,7 @@ HOUSEHOLD: list[tuple[T, str]] = [
 ]
 
 
-@lru_cache(maxsize=4)
+@lru_cache(maxsize=32)
 def household(predictor: "Predictor", lang: str = "en") -> dict:
     """Everyday substances: what the lab measured vs what SoluAI (or the rules) says."""
     rows = []

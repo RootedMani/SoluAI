@@ -85,13 +85,61 @@ function buildLayout() {
 }
 document.addEventListener("DOMContentLoaded", buildLayout);
 
+/* ------------------------------------------------------------------ model choice
+   The chosen model is remembered in the browser and sent with every request.
+   Pages with <div id="model-slot"></div> get a picker; they listen for "modelchange". */
+let MODEL = (() => {
+  const fromUrl = new URLSearchParams(location.search).get("model");
+  try { return fromUrl || localStorage.getItem("soluai-model") || "v2"; } catch { return fromUrl || "v2"; }
+})();
+let MODELS_PROMISE = null;
+function loadModels() {
+  if (!MODELS_PROMISE) MODELS_PROMISE = api("/api/models").catch(() => { MODELS_PROMISE = null; return { models: [], default: "v2" }; });
+  return MODELS_PROMISE;
+}
+function setModel(id) {
+  MODEL = id;
+  try { localStorage.setItem("soluai-model", id); } catch { /* private mode: ignore */ }
+  document.querySelectorAll(".model-select").forEach((s) => { s.value = id; });
+  updateModelNote();
+  document.dispatchEvent(new CustomEvent("modelchange", { detail: id }));
+}
+let MODEL_LIST = [];
+const modelInfo = (id) => MODEL_LIST.find((m) => m.id === id);
+const modelName = (id) => (modelInfo(id) || { name: id }).name;
+function updateModelNote() {
+  const m = modelInfo(MODEL);
+  document.querySelectorAll(".model-note").forEach((el) => {
+    el.innerHTML = m ? `${esc(m.description)} <span class="ltr">${T("Test", "آزمون")} R² ${m.test.random.r2.toFixed(2)}</span>` : "";
+  });
+}
+async function buildModelPicker() {
+  const slot = document.getElementById("model-slot");
+  if (!slot) return;
+  const { models, default: def } = await loadModels();
+  if (!models.length) return;
+  MODEL_LIST = models;
+  if (!modelInfo(MODEL)) MODEL = def;   // a stale choice from an older version
+  const label = (FA ? slot.dataset.labelFa : slot.dataset.label) || T("Model", "مدل");
+  slot.className = "model-picker no-print";
+  slot.innerHTML = `<label><span class="kicker">${esc(label)}</span>
+      <select class="model-select select">${models.map((m) =>
+        `<option value="${m.id}">${esc(m.name)} · R² ${m.test.random.r2.toFixed(2)}</option>`).join("")}</select></label>
+    <span class="small muted model-note"></span>`;
+  const sel = slot.querySelector("select");
+  sel.value = MODEL;
+  sel.onchange = () => setModel(sel.value);
+  updateModelNote();
+}
+document.addEventListener("DOMContentLoaded", buildModelPicker);
+
 /* ------------------------------------------------------------------ API */
 async function api(path, body) {
   let opts = {};
   if (body) {
-    opts = { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ lang: LANG, ...body }) };
+    opts = { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ lang: LANG, model: MODEL, ...body }) };
   } else {
-    path += (path.includes("?") ? "&" : "?") + "lang=" + LANG;
+    path += (path.includes("?") ? "&" : "?") + "lang=" + LANG + (path.startsWith("/api/models") ? "" : "&model=" + encodeURIComponent(MODEL));
   }
   let res;
   try {

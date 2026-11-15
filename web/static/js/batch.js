@@ -15,6 +15,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("go").onclick = run;
   document.getElementById("csv").onclick = () => downloadText("soluai_predictions.csv", toCsv());
 });
+document.addEventListener("modelchange", () => { if (ROWS.length) run(); });
 
 /* One molecule per line. For a CSV with a header, the "smiles" (or "name") column is used, otherwise the first column. */
 function parseFile(text) {

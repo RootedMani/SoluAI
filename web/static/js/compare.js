@@ -23,6 +23,7 @@ document.addEventListener("DOMContentLoaded", () => {
   fill(fromUrl.length >= 2 ? fromUrl : PRESETS[0][1]);
   run();
 });
+document.addEventListener("modelchange", () => run());
 
 function fill(list) {
   [1, 2, 3, 4].forEach((i) => { document.getElementById(`m${i}`).value = list[i - 1] || ""; });
@@ -44,7 +45,8 @@ async function run() {
       <div class="card fade-in" style="margin-top:20px">
         <div class="card-title"><h3>${T("Trend", "روند")}</h3><span class="small muted">${T(`bars show the ${cov}% range; dots are lab measurements`, `خط‌ها بازهٔ ${cov}% را نشان می‌دهند؛ نقطه‌ها اندازه‌گیری آزمایشگاهی‌اند`)}</span></div>
         <div id="trend" class="plot" style="min-height:340px"></div>
-      </div>`;
+      </div>
+      ${modelTable(results)}`;
     drawTrend();
   } catch (err) {
     out.innerHTML = `<div style="margin-top:20px">${errorBox(err)}</div>`;
@@ -70,6 +72,7 @@ function card(r) {
     <div class="mol-meta">${formula(r.formula)} · ${r.mol_weight.toFixed(0)} g/mol</div>
     <div class="mol-paper" style="margin:12px 0">${r.svg_explained}</div>
     <div class="big-number">${num(r.logS)}<small>logS</small></div>
+    <div class="small muted">${esc(r.model.name)}</div>
     <div style="margin:10px 0">${badge(r.category)}</div>
     <div class="small muted">≈ <span class="ltr">${fmtConc(r.g_per_L)}</span> · ${T("range", "بازه")} <span class="ltr">${num(r.interval[0], 1)} … ${num(r.interval[1], 1)}</span></div>
     ${r.measured ? `<div class="small muted">${T("measured in the lab", "اندازه‌گیری آزمایشگاهی")}: <b class="ltr">${num(r.measured.logS)}</b></div>` : ""}
@@ -85,10 +88,10 @@ function drawTrend() {
   const ok = all.filter((r) => r.kind !== "ionic"), salts = all.filter((r) => r.kind === "ionic" && r.measured);
   const colors = ok.map((r) => css(`--${CLASS_KEY[r.category]}`));
   const traces = [{
-    type: "bar", name: "SoluAI", x: ok.map((r) => capitalize(r.name)), y: ok.map((r) => r.logS), marker: { color: colors },
+    type: "bar", name: ok.length ? ok[0].model.name : "SoluAI", x: ok.map((r) => capitalize(r.name)), y: ok.map((r) => r.logS), marker: { color: colors },
     error_y: { type: "data", symmetric: false, array: ok.map((r) => r.interval[1] - r.logS),
       arrayminus: ok.map((r) => r.logS - r.interval[0]), color: css("--ink-3"), thickness: 1.5, width: 8 },
-    hovertemplate: "%{x}<br>logS %{y:.2f}<extra>SoluAI</extra>",
+    hovertemplate: "%{x}<br>logS %{y:.2f}<extra></extra>",
   }];
   const meas = ok.filter((r) => r.measured);
   if (meas.length || salts.length) traces.push({
@@ -102,3 +105,22 @@ function drawTrend() {
     showlegend: traces.length > 1, legend: { orientation: "h", y: 1.12 } }), PLOT_CONFIG);
 }
 document.addEventListener("themechange", drawTrend);
+
+/* Every model's answer for every molecule, plus the measured value; the best guess in each column is marked. */
+function modelTable(results) {
+  const ok = results.filter((r) => !r.error && r.kind === "organic");
+  if (!ok.length) return "";
+  const head = ok.map((r) => `<th class="num">${esc(capitalize(r.name))}</th>`).join("");
+  const rows = ok[0].models.map((m, i) => `<tr class="${m.id === MODEL ? "me" : ""}"><td>${esc(m.name)}</td>${ok.map((r) => {
+    const v = r.models[i].logS, meas = r.measured;
+    const best = meas && r.models.every((x) => Math.abs(x.logS - meas.logS) >= Math.abs(v - meas.logS));
+    return `<td class="num ltr">${best ? "<b>" : ""}${num(v)}${best ? " ★</b>" : ""}</td>`;
+  }).join("")}</tr>`).join("");
+  const meas = `<tr><td><i>${T("Measured in the lab", "اندازه‌گیری آزمایشگاهی")}</i></td>${ok.map((r) => `<td class="num ltr"><i>${r.measured ? num(r.measured.logS) : "–"}</i></td>`).join("")}</tr>`;
+  return `<div class="card fade-in" style="margin-top:20px">
+    <div class="card-title"><h3>${T("What every model predicts", "پیش‌بینی همهٔ مدل‌ها")}</h3><span class="small muted">logS · ★ ${T("closest to the lab value", "نزدیک‌ترین به مقدار آزمایشگاهی")}</span></div>
+    <div class="table-wrap"><table class="leader"><thead><tr><th>${T("Model", "مدل")}</th>${head}</tr></thead><tbody>${meas}${rows}</tbody></table></div>
+    <p class="small muted" style="margin:12px 0 0">${T("Honest note: molecules with a lab value were in the training data, so the stars flatter the models a little.",
+      "نکتهٔ صادقانه: مولکول‌هایی که مقدار آزمایشگاهی دارند در داده‌های آموزشی بوده‌اند، پس ستاره‌ها کمی به نفع مدل‌هاست.")}</p>
+  </div>`;
+}
